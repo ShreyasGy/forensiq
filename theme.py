@@ -165,6 +165,8 @@ def apply_theme(active_page="Home"):
         st.page_link("pages/forensic_profiler.py",   label="🧬 Forensic Profiler")
         st.page_link("pages/risk_scorer.py",         label="⚠️ Risk Scorer")
         st.page_link("pages/dashboard.py",           label="📊 Analytics Dashboard")
+        st.page_link("pages/demo_mode.py",           label="Demo Mode")
+        
 
         st.markdown("---")
         st.markdown(
