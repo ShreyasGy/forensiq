@@ -1,0 +1,24 @@
+# Secrets — never push these
+.env
+.streamlit/secrets.toml
+
+# Database — judges get a clean DB on cloud
+forensiq.db
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+*.egg-info/
+dist/
+build/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,252 @@
+FORENSIQ COUNTY MEDICAL EXAMINER'S OFFICE
+OFFICIAL AUTOPSY REPORT
+
+================================================================================
+CASE INFORMATION
+================================================================================
+ME Case Number  : ME-2024-0847
+Decedent        : Jane Doe (Unidentified Female — DNA profile initiated)
+Estimated Age   : 28–35 years
+Race/Ethnicity  : Caucasian
+Date of Autopsy : March 15, 2024 — Commenced 09:15 AM, Completed 2:40 PM
+Examining Path. : Dr. Patricia Morrow, MD — Board-Certified Forensic Pathologist
+Assisting Tech. : R. Vasquez, Forensic Autopsy Technician
+Case Referred By: Detective Harlan Cross, Badge #4471, Forensiq PD Homicide Unit
+Autopsy Location: Forensiq County Medical Examiner's Office, Suite 2B
+
+================================================================================
+CIRCUMSTANCES OF DEATH
+================================================================================
+The decedent was discovered at approximately 06:42 AM on March 15, 2024, in
+the wooded area adjacent to Millfield Park, Forensiq County. She was found
+face-down in approximately 6 inches of standing rainwater near the north
+perimeter trail. Discovery was made by a jogger, Marcus Webb (DOB 04-Sep-1987),
+who called 911 immediately. Police arrived at 06:55 AM.
+
+Scene observations documented by Det. Cross include: significant flattened
+vegetation consistent with a struggle, broken tree branches at mid-height,
+and drag marks in the mud extending approximately 12 metres from the nearest
+paved footpath. No identification was recovered from the body or surrounding
+area. The decedent was barefoot; no footwear was located at the scene. Missing
+persons queries are ongoing.
+
+================================================================================
+EXTERNAL EXAMINATION
+================================================================================
+Body Measurements
+  Height  : 5 feet 6 inches (167.6 cm)
+  Weight  : 132 lbs (59.9 kg)
+  Build   : Slender, physically athletic
+  Hair    : Brown, shoulder-length, natural colour
+  Eyes    : Hazel
+  Skin    : No unusual tattoos or distinguishing birthmarks noted
+
+Clothing at Discovery
+  Black athletic leggings (elasticated waist, no pockets)
+  Grey sports bra (size M, no visible brand markings)
+  No shoes, socks, jacket, or personal accessories
+
+Body Temperature & PMI Estimate
+  Rectal temperature at scene (07:14 AM): 68.4°F (20.2°C)
+  Ambient air temperature at scene: 52.1°F (11.2°C)
+  Using Henssge nomogram with body weight 59.9 kg:
+    Estimated post-mortem interval (PMI): 8–14 hours
+    Approximate death window: 16:42–22:42 hrs, March 14, 2024
+
+Lividity (Livor Mortis)
+  Distribution: Posterior and bilateral lateral surfaces
+  Fixation: FIXED — does not blanch on sustained pressure
+  CRITICAL FINDING: Lividity pattern is INCONSISTENT with the recovery
+  position (face-down). The fixed posterior lividity indicates the body was
+  in a face-up or lateral position for a minimum of 6 hours post-mortem,
+  then repositioned before discovery. This confirms the recovery location
+  IS NOT the primary scene of death.
+
+Rigor Mortis
+  Complete and fixed rigidity in all major muscle groups — consistent with
+  estimated PMI of 8–14 hours.
+
+================================================================================
+INJURIES — EXTERNAL
+================================================================================
+
+HEAD AND NECK
+---
+1. BLUNT FORCE TRAUMA — Right Posterior Skull
+   Location  : Right occipital region
+   Description: A 4.2 cm stellate laceration with beveled wound margins.
+   Underlying comminuted skull fracture measuring 6.1 cm in greatest
+   dimension, radiating from the impact point. Wound margin geometry
+   suggests a curved striking surface, estimated diameter 3–5 cm.
+   No defensive discharge pattern. Haemorrhagic contusion of surrounding
+   scalp tissue extending 3 cm from wound margins.
+
+2. PETECHIAL HAEMORRHAGE
+   Location  : Bilateral upper and lower conjunctivae; oral mucosa
+   Description: Multiple pinpoint petechiae consistent with increased
+   intravascular pressure during asphyxiation.
+
+3. LIGATURE MARK — Neck
+   Location  : Anterior and lateral neck, below laryngeal prominence
+   Description: A continuous, circumferential ligature mark, 2.1 cm in
+   width. Horizontal orientation with no upward deviation. Abrasion and
+   deep bruising throughout. No suspension furrow or knot imprint.
+   Consistent with horizontal ligature or manual strangulation — NOT
+   consistent with hanging.
+
+4. HYOID BONE — FRACTURED
+   Confirmed fracture of the right greater cornu of the hyoid bone.
+   This finding is highly specific for homicidal strangulation.
+
+UPPER EXTREMITIES — DEFENSIVE WOUNDS
+---
+5. RIGHT FOREARM (dorsal surface)
+   Three incised wounds: 1.4 cm, 0.8 cm, and 0.6 cm in length.
+   Wounds are perpendicular to the arm axis, penetrating subcutaneous fat.
+   Sharp-force characteristics. Consistent with defensive action against
+   a bladed instrument.
+
+6. LEFT PALM (thenar eminence)
+   Two parallel incised wounds: 2.1 cm and 1.7 cm in length, moderate
+   depth. Consistent with grasping at a blade during struggle.
+
+7. BILATERAL WRIST BRUISING
+   Patterned bruising 4–6 cm in width, bilateral. Consistent with
+   forceful gripping or physical restraint.
+
+TORSO
+---
+8. RIGHT FLANK ABRASION
+   8 x 3 cm area of irregular surface abrasion. Pattern consistent with
+   dragging across coarse tarmac or gravel surface. Perimortem.
+   No penetrating wounds to thorax or abdomen.
+
+LOWER EXTREMITIES
+---
+9. RIGHT KNEE ABRASION
+   3 x 2 cm patterned abrasion. Consistent with falling or struggling
+   on a hard surface such as paving or roadway.
+
+================================================================================
+INTERNAL EXAMINATION
+================================================================================
+
+HEAD
+  Subdural haematoma, right hemisphere: estimated volume 35 mL (acute).
+  Bilateral subarachnoid haemorrhage present.
+  Diffuse cerebral oedema. Brain weight: 1,382 g (elevated; normal ~1,300 g).
+  Skull fracture extends from right occipital bone into right temporal bone.
+  No contrecoup injury.
+
+NECK (Dissection)
+  Bilateral haemorrhage in strap muscles of the neck.
+  Hyoid fracture confirmed — right greater cornu (complete, sharp-edged).
+  Thyroid cartilage: intact, no fracture.
+  Petechiae in laryngeal mucosa.
+  Carotid arteries: no pre-existing atherosclerosis.
+
+THORAX
+  Heart: 310 g — normal configuration. No coronary artery disease.
+  No myocardial infarction, acute or remote.
+  Lungs: Right 580 g, Left 510 g. Bilateral pulmonary oedema consistent
+  with asphyxiation. No aspiration of water or gastric contents. No
+  pulmonary thromboembolism.
+
+ABDOMEN
+  Liver: 1,480 g — normal architecture, no fibrosis or cirrhosis.
+  Kidneys: Bilateral, normal weight and appearance.
+  Stomach: 120 mL partially digested food content. Identifiable as a
+  pasta-based meal with tomato material. Estimated last meal consumed
+  2–4 hours prior to death.
+  Uterus: ENLARGED — consistent with intrauterine pregnancy.
+  Gestational age estimated at approximately 11–12 weeks by uterine size.
+  Fetal tissue present. DNA profiling of fetal tissue is recommended.
+
+================================================================================
+TOXICOLOGY — PRELIMINARY RESULTS
+(Full confirmation panel: estimated 4–6 weeks)
+================================================================================
+  Blood Alcohol Content (BAC): 0.03%  — below legal limit
+  Benzodiazepines              : POSITIVE
+                                 Diazepam detected
+                                 Estimated serum concentration: 0.4 mg/L
+                                 (therapeutic range upper limit: 0.25 mg/L)
+                                 ELEVATED above therapeutic range
+  GHB (gamma-hydroxybutyrate)  : POSITIVE
+                                 Detected level: 28 mg/L serum
+                                 Endogenous baseline: <4 mg/L
+                                 MARKEDLY ELEVATED — consistent with
+                                 exogenous administration; level sufficient
+                                 to cause sedation or physical incapacitation
+  Opiates                      : Negative
+  Stimulants (amphetamines)    : Negative
+  Cannabis (THC metabolites)   : Negative
+
+================================================================================
+CAUSE AND MANNER OF DEATH
+================================================================================
+PRIMARY CAUSE OF DEATH:
+  Homicidal asphyxia by strangulation (combined ligature and manual mechanism)
+
+SIGNIFICANT CONTRIBUTING CONDITION:
+  Blunt force trauma to posterior cranium with acute subdural haematoma
+
+MANNER OF DEATH:  HOMICIDE
+
+================================================================================
+MEDICAL EXAMINER'S OPINION
+================================================================================
+This case presents a multi-mechanism homicide of high forensic complexity.
+The evidence supports the following probable sequence of events:
+
+(1) INCAPACITATION: The decedent was administered GHB (28 mg/L) and elevated
+    diazepam (0.4 mg/L), likely without consent, sufficient to impair or
+    eliminate her ability to resist.
+
+(2) BLUNT FORCE ASSAULT: A single, forceful blow to the right posterior skull
+    caused the observed occipital fracture and acute subdural haematoma.
+
+(3) STRANGULATION: Horizontal ligature strangulation was applied, causing
+    hyoid fracture, petechial haemorrhage, and asphyxiation as the ultimate
+    cause of death.
+
+The defensive incised wounds on the hands and forearms confirm the victim was
+conscious and resistant during at least part of the assault. The ligature mark
+orientation rules out hanging. Fixed lividity inconsistent with the recovery
+position CONFIRMS the body was moved to Millfield Park after death.
+
+The actual primary scene of death has not been identified.
+The unknown pregnancy (11–12 weeks) may be forensically significant and
+warrants DNA profiling of fetal tissue to establish paternity.
+
+================================================================================
+SPECIMENS COLLECTED
+================================================================================
+  [ ] Fingernail clippings — both hands — submitted for DNA analysis
+  [ ] Vaginal swabs — sexual assault kit initiated (results pending)
+  [ ] Fetal tissue sample — submitted for DNA profiling
+  [ ] Blood (cardiac) — toxicology (full panel)
+  [ ] Vitreous humour — toxicology
+  [ ] Liver tissue — toxicology
+  [ ] Gastric contents — preserved
+  [ ] Ligature mark photographs (33 images)
+  [ ] Skull fracture radiographs (12 images)
+
+================================================================================
+SUPPLEMENTARY INVESTIGATOR NOTES
+================================================================================
+  - The absence of footwear at the scene requires explanation.
+  - The drag marks (12 m) suggest the body was transported from a vehicle.
+  - Birchwood Lane (adjacent to scene) should be treated as a drop-off point.
+  - GHB and elevated diazepam combination is consistent with drug-facilitated
+    sexual assault scenarios; full sexual assault kit results are pending.
+  - Fetal paternity DNA may directly link a suspect to the decedent.
+  - Time of death window (16:42–22:42, March 14) should be cross-referenced
+    with CCTV footage from Millfield Park perimeter and Birchwood Lane.
+
+================================================================================
+Signed: Dr. Patricia Morrow, MD
+        Forensic Pathologist — Forensiq County Medical Examiner's Office
+        License No.: FP-4471
+        Date Signed: March 15, 2024  |  Time: 17:32
+================================================================================
