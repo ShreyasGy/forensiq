@@ -620,6 +620,10 @@ st.caption("Live overview of all cases, evidence, and risk intelligence")
 st.divider()
 
 # Load data
+refresh_col, _ = st.columns([1, 5])
+if refresh_col.button("🔄 Refresh Dashboard"):
+    st.cache_data.clear()
+
 with st.spinner("Loading dashboard data…"):
     data = load_dashboard_data()
 
