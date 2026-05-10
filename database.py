@@ -480,38 +480,26 @@ def get_autopsy_by_case(case_id):
     conn.row_factory = sqlite3.Row
     cur = conn.cursor()
     cur.execute(
-        "SELECT * FROM autopsy_reports WHERE case_id = ? ORDER BY id DESC LIMIT 1",
+        "SELECT * FROM autopsy_reports WHERE case_id = ? ORDER BY id DESC",
         (pk,)
     )
-    row = cur.fetchone()
+    rows = cur.fetchall()
     conn.close()
 
-    if row is None:
-        # Return empty dict with all keys case_manager.py expects
-        return {
-            "cause_of_death":    "",
-            "manner_of_death":   "",
-            "injuries":          "",
-            "toxicology":        "",
-            "findings":          "",
-            "key_terms":         "",
-            "weapon":            "",
-            "defensive_wounds":  "",
-            "signs_of_struggle": "",
-            "soap_subjective":   "",
-            "soap_objective":    "",
-            "soap_assessment":   "",
-            "soap_plan":         "",
-            "filename":          "",
-            "raw_text":          "",
-            "injury_type":       "",
-            "body_location":     "",
-            "weapon_type":       "",
-            "time_indicators":   "",
-            "anomalies":         "",
-        }
-
-    return _normalize_autopsy(row)
+    result = []
+    for row in rows:
+        d = dict(row)
+        # Inject aliases case_manager.py expects
+        d["cause_of_death"] = (d.get("cause_of_death")
+                                or d.get("injury_type")
+                                or d.get("soap_assessment", ""))
+        d["report_text"]    = (d.get("report_text")
+                                or d.get("raw_text")
+                                or d.get("soap_subjective", ""))
+        d["uploaded_at"]    = (d.get("uploaded_at")
+                                or d.get("created_at", ""))
+        result.append(d)
+    return result
 
 # ─────────────────────────────────────────────────────────────────────────────
 # WITNESS HELPERS
@@ -535,16 +523,28 @@ def insert_witness_statement(case_id, raw_text, timeline, key_people,
 
 def get_witnesses_by_case(case_id):
     pk = _resolve_case_pk(case_id)
-    if pk is None:
-        return []
     conn = get_connection()
-    rows = conn.execute(
-        "SELECT * FROM witness_statements WHERE case_id = ? ORDER BY created_at DESC",
+    conn.row_factory = sqlite3.Row
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT * FROM witness_statements WHERE case_id = ? ORDER BY id DESC",
         (pk,)
-    ).fetchall()
+    )
+    rows = cur.fetchall()
     conn.close()
-    return [dict(r) for r in rows]
 
+    result = []
+    for row in rows:
+        d = dict(row)
+        # Inject aliases case_manager.py expects
+        d["witness_name"]   = (d.get("witness_name")
+                                or d.get("name", "Unknown"))
+        d["statement_text"] = (d.get("statement_text")
+                                or d.get("statement", ""))
+        d["recorded_at"]    = (d.get("recorded_at")
+                                or d.get("created_at", ""))
+        result.append(d)
+    return result
 
 # ─────────────────────────────────────────────────────────────────────────────
 # TOD HELPERS
