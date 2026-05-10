@@ -38,8 +38,7 @@ client = OpenAI(
     base_url="https://api.featherless.ai/v1",
     api_key=os.getenv("FEATHERLESS_API_KEY")
 )
-MODEL = "meta-llama/Llama-3.3-70B-Instruct"
-
+MODEL = "Qwen/Qwen2.5-7B-Instruct"
 
 # ── HELPERS ───────────────────────────────────────────────────────────────────
 
@@ -133,62 +132,34 @@ def build_case_summary(case_id: str) -> str:
     return "\n".join(lines)
 
 
-def run_pattern_analysis(selected_ids: list) -> str:
-    """Bundle all case evidence and send to Featherless AI."""
-    blocks = [
-        f"{'=' * 55}\n{build_case_summary(cid)}"
-        for cid in selected_ids
-    ]
-    combined = "\n".join(blocks)
+import time
 
-    prompt = f"""You are a senior forensic investigator specialising in cross-case pattern analysis and serial crime identification.
-
-Carefully analyse the following {len(selected_ids)} case summaries and identify patterns, links, and connections.
-
-{combined}
-
-Respond ONLY in this EXACT format. Label every section exactly as shown:
-
-PHYSICAL_PATTERNS:
-[Shared injury types, causes of death, weapon types, victim demographics, body condition at discovery]
-
-LOCATION_TIME_PATTERNS:
-[Shared locations, neighbourhoods, time of day, day of week, seasonal patterns]
-
-BEHAVIOURAL_SIGNATURE:
-[Perpetrator behaviours: disposal method, evidence destruction, victim selection, any signature acts]
-
-SUSPECT_CONVERGENCE:
-[Suspects appearing across multiple cases, shared criminal histories, or overlapping suspect profiles]
-
-CONVERGENCE_SCORE:
-[Single integer 0-100 — then one word: WEAK / MODERATE / STRONG / CRITICAL]
-
-INVESTIGATOR_RECOMMENDATION:
-[3-5 specific numbered actions investigators should take based on these patterns]
-
-PATTERN_HEADLINE:
-[One sentence summary of the key finding for the report header]"""
-
-    response = client.chat.completions.create(
-        model=MODEL,
-        max_tokens=2000,
-        temperature=0.4,
-        messages=[
-            {
-                "role": "system",
-                "content": (
-                    "You are a forensic pattern analysis expert. "
-                    "Extract cross-case patterns with precision. "
-                    "Follow the response format exactly — no extra text outside sections."
-                ),
-            },
-            {"role": "user", "content": prompt},
-        ],
-    )
-    return response.choices[0].message.content
-
-
+max_retries = 3
+for attempt in range(1, max_retries + 1):
+    try:
+        response = client.chat.completions.create(
+            model=MODEL,
+            temperature=0.2,
+            max_tokens=1800,
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user",   "content": user_msg},
+            ],
+        )
+        raw = response.choices[0].message.content
+        break  # success — exit retry loop
+    except Exception as e:
+        if "429" in str(e) or "rate" in str(e).lower() or "concurrency" in str(e).lower():
+            if attempt < max_retries:
+                st.warning(f"AI busy — waiting 15 seconds before retry {attempt}/{max_retries}…")
+                time.sleep(15)
+            else:
+                st.error("AI concurrency limit reached. Please wait 30 seconds and try again.")
+                st.stop()
+        else:
+            st.error(f"AI call failed: {e}")
+            st.stop()
+            
 def parse_result(raw: str) -> dict:
     """Split AI response into a structured dict by section labels."""
     keys = [
