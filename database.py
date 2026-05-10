@@ -476,16 +476,13 @@ def insert_autopsy_report(data_or_case_id=None, filename="", raw_text="",
 
 def get_autopsy_by_case(case_id):
     pk = _resolve_case_pk(case_id)
-    if pk is None:
-        return []
     conn = get_connection()
-    rows = conn.execute(
-        "SELECT * FROM autopsy_reports WHERE case_id = ? ORDER BY created_at DESC",
-        (pk,)
-    ).fetchall()
+    conn.row_factory = sqlite3.Row
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM autopsy_reports WHERE case_id = ? ORDER BY id DESC LIMIT 1", (pk,))
+    row = cur.fetchone()
     conn.close()
-    return [dict(r) for r in rows]
-
+    return _normalize_autopsy(row)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # WITNESS HELPERS
