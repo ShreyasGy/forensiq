@@ -79,15 +79,16 @@ def _normalize_cctv(row):
     Adds 'camera_id' which was a Session-5 migration column.
     """
     d = dict(row)
-    d["camera_id"]   = d.get("camera_id")   or ""
-    d["timestamp"]   = d.get("timestamp")   or ""
-    d["location"]    = d.get("location")    or ""
-    d["description"] = d.get("description") or ""
-    d["latitude"]    = d.get("latitude")
-    d["longitude"]   = d.get("longitude")
-    d["confidence"]  = d.get("confidence")  or ""
-    d["notes"]       = d.get("notes")       or ""
-    d["flagged"]     = bool(d.get("flagged") or d.get("notes", ""))
+    d["camera_id"]       = d.get("camera_id")       or ""
+    d["timestamp"]       = d.get("timestamp")        or ""
+    d["location"]        = d.get("location")         or ""
+    d["description"]     = d.get("description")      or ""
+    d["latitude"]        = d.get("latitude")
+    d["longitude"]       = d.get("longitude")
+    d["confidence"]      = d.get("confidence")       or ""
+    d["notes"]           = d.get("notes")            or ""
+    d["flagged"]         = bool(d.get("flagged")     or d.get("notes", ""))
+    d["camera_location"] = (d.get("camera_location") or d.get("location") or "")
     return d
     
 def _normalize_autopsy(row):
