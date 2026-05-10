@@ -54,7 +54,6 @@ def _normalize_tod(row):
     except Exception:
         return {}
 
-    # Inject aliases every module expects
     d["estimated_tod"]      = (d.get("estimated_tod")
                                 or d.get("estimated_tod_range", ""))
     d["time_window_start"]  = (d.get("time_window_start")
@@ -62,6 +61,8 @@ def _normalize_tod(row):
     d["time_window_end"]    = (d.get("time_window_end")
                                 or d.get("window_hours", ""))
     d["confidence_score"]   = d.get("confidence_score", "")
+    d["confidence"]         = (d.get("confidence")
+                                or d.get("confidence_score", ""))
     d["method_used"]        = (d.get("method_used")
                                 or d.get("reasoning", ""))
     d["notes"]              = (d.get("notes")
@@ -76,6 +77,7 @@ def _normalize_tod(row):
     d["factors_reduced"]    = d.get("factors_reduced", "")
     d["special_notes"]      = d.get("special_notes", "")
     return d
+
 
 def _normalize_suspect(row):
     if row is None:
