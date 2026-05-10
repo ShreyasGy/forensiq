@@ -125,7 +125,7 @@ def load_dashboard_data():
     )
 
     # ── Risk scores ────────────────────────────────────────────────────────────
-    risk_rows = direct_query("SELECT * FROM risk_scores ORDER BY created_at DESC")
+    risk_rows = direct_query("SELECT * FROM risk_scores ORDER BY id DESC")
     data["risk_rows"] = risk_rows
 
     high_critical = sum(
@@ -718,8 +718,8 @@ with tab2:
         for r in recent_risk:
             cid = str(r.get("case_id", ""))
             case_label = id_to_label.get(cid, cid)
-            score = r.get("risk_score", r.get("score", "N/A"))
-            cat = str(r.get("risk_category", r.get("category", "N/A")))
+            score = r.get("score") or r.get("risk_score", "N/A")
+            cat   = str(r.get("risk_level") or r.get("risk_category") or r.get("category", "N/A"))
             cat_color = risk_badge_color(cat)
             created = str(r.get("created_at", ""))[:19]
             st.markdown(
