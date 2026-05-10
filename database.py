@@ -904,38 +904,46 @@ def get_suspects_by_case(case_id):
 # RISK SCORE HELPERS
 # ─────────────────────────────────────────────────────────────────────────────
 
-def insert_risk_score(case_id, risk_score=None, risk_category=None,
-                      notes=None,
-                      # Legacy positional args kept for backward compatibility
-                      score=None, risk_level=None, reasoning=None,
-                      factors=None, recommendations=None, **kwargs):
-    """
-    Accepts both the new keyword style from risk_scorer.py:
-        insert_risk_score(case_id=, risk_score=, risk_category=, notes=)
-    and the old positional style:
-        insert_risk_score(case_id, score, risk_level, reasoning, factors, recommendations)
-    """
-    # Resolve values from either calling convention
-    resolved_score    = risk_score    if risk_score    is not None else score
-    resolved_category = risk_category if risk_category is not None else risk_level
-    resolved_notes    = notes         if notes         is not None else factors
-    resolved_reasoning     = reasoning     or ""
-    resolved_recommendations = recommendations or ""
+def insert_risk_score(data_or_case_id=None, score="", risk_level="",
+                      reasoning="", factors="", recommendations="",
+                      risk_score="", risk_category="", notes="",
+                      **kwargs):
+    if isinstance(data_or_case_id, dict):
+        d = data_or_case_id
+        case_id         = d.get("case_id", "")
+        score           = d.get("score") or d.get("risk_score", "")
+        risk_level      = d.get("risk_level") or d.get("risk_category", "")
+        notes_raw       = d.get("notes", "")
+        try:
+            import json as _json
+            notes_dict  = _json.loads(notes_raw) if notes_raw else {}
+        except Exception:
+            notes_dict  = {}
+        reasoning       = d.get("reasoning") or notes_dict.get("rationale", "")
+        factors         = d.get("factors") or str(notes_dict.get("red_flags", ""))
+        recommendations = d.get("recommendations") or str(notes_dict.get("recommended_actions", ""))
+    else:
+        case_id = data_or_case_id
+        # Handle keyword args passed directly by risk_scorer.py
+        score      = score      or risk_score
+        risk_level = risk_level or risk_category
+        notes_raw  = notes
+        try:
+            import json as _json
+            notes_dict  = _json.loads(notes_raw) if notes_raw else {}
+        except Exception:
+            notes_dict  = {}
+        reasoning       = reasoning       or notes_dict.get("rationale", "")
+        factors         = factors         or str(notes_dict.get("red_flags", ""))
+        recommendations = recommendations or str(notes_dict.get("recommended_actions", ""))
 
     pk = _resolve_case_pk(case_id)
     conn = get_connection()
     conn.execute("""
         INSERT INTO risk_scores (
-            case_id, score, risk_score,
-            risk_level, risk_category,
-            reasoning, factors, recommendations, notes
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """, (pk,
-          resolved_score, resolved_score,
-          resolved_category, resolved_category,
-          resolved_reasoning,
-          resolved_notes, resolved_recommendations,
-          resolved_notes))
+            case_id, score, risk_level, reasoning, factors, recommendations
+        ) VALUES (?, ?, ?, ?, ?, ?)
+    """, (pk, score, risk_level, reasoning, factors, recommendations))
     conn.commit()
     conn.close()
 
