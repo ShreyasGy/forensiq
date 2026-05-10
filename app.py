@@ -94,7 +94,7 @@ st.markdown("""
     in triaging evidence, estimating time of death, tracking suspect movement via CCTV,
     detecting crime patterns across cases, profiling suspects, and generating risk scores —
     all in one unified system.<br><br>
-    <b>AI Engine:</b> Featherless AI — <code>meta-llama/Llama-3.3-70B-Instruct</code><br>
+    <b>AI Engine:</b> Featherless AI — <code>meta-qwen/qwen-2.5-72B-Instruct</code><br>
     <b>Database:</b> SQLite (local, offline, zero cost)<br>
     <b>Built for:</b> Hackathon — AI Forensics Track
 </div>
