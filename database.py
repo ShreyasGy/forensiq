@@ -132,6 +132,7 @@ def _normalize_autopsy(row):
     d["soap_plan"]         = d.get("soap_plan",         "")
     return d
 
+
 def _normalize_risk(row):
     if row is None:
         return {}
@@ -140,26 +141,26 @@ def _normalize_risk(row):
     except Exception:
         return {}
 
-    # Aliases so every module reads the same keys
-    d["score"]          = d.get("score")       or d.get("risk_score",    "")
-    d["risk_score"]     = d["score"]
-    d["risk_level"]     = d.get("risk_level")  or d.get("risk_category", "")
-    d["risk_category"]  = d["risk_level"]
-    d["factors"]        = d.get("factors",        "")
-    d["reasoning"]      = d.get("reasoning",      "")
-    d["recommendations"]= d.get("recommendations","")
-    d["calculated_at"]  = (d.get("calculated_at")
-                           or d.get("created_at", ""))
-    # Rebuild notes JSON so risk_scorer.py and dashboard can read it
-    try:
-        import json as _json
-        existing_notes = d.get("notes", "")
-        if existing_notes:
-            notes_dict = _json.loads(existing_notes)
-        else:
-            notes_dict = {}
-    except Exception:
-        notes_dict = {}
+    # Aliases so every module reads the same keys.
+    # DB has both 'score' and 'risk_score' columns — prefer whichever is set.
+    d["score"]         = d.get("risk_score") or d.get("score") or ""
+    d["risk_score"]    = d["score"]
+    d["risk_level"]    = d.get("risk_category") or d.get("risk_level") or ""
+    d["risk_category"] = d["risk_level"]
+    d["factors"]       = d.get("factors",        "")
+    d["reasoning"]     = d.get("reasoning",      "")
+    d["recommendations"] = d.get("recommendations", "")
+    d["calculated_at"] = d.get("calculated_at") or d.get("created_at", "")
+
+    # Parse / rebuild notes JSON so every consumer can access it.
+    import json as _json
+    notes_raw = d.get("notes", "")
+    notes_dict = {}
+    if notes_raw:
+        try:
+            notes_dict = _json.loads(notes_raw)
+        except Exception:
+            pass
 
     if not notes_dict:
         notes_dict = {
@@ -168,6 +169,13 @@ def _normalize_risk(row):
             "recommended_actions": d.get("recommendations", ""),
         }
     d["notes"] = _json.dumps(notes_dict)
+    # Expose top-level convenience keys from notes
+    d["rationale"]           = notes_dict.get("rationale", d.get("reasoning", ""))
+    d["red_flags"]           = notes_dict.get("red_flags", [])
+    d["recommended_actions"] = notes_dict.get("recommended_actions", [])
+    d["evidence_gaps"]       = notes_dict.get("evidence_gaps", [])
+    d["confidence"]          = notes_dict.get("confidence", "")
+    d["evidence_quality"]    = notes_dict.get("evidence_quality", {})
     return d
 
 
@@ -897,6 +905,14 @@ def insert_risk_score(data_or_case_id=None, score="", risk_level="",
                       reasoning="", factors="", recommendations="",
                       risk_score="", risk_category="", notes="",
                       **kwargs):
+    """
+    Accepts both dict and positional/keyword styles.
+    Writes to ALL four columns (score, risk_score, risk_level, risk_category)
+    so that every reader sees consistent data regardless of which column name
+    it prefers.  Also persists the full notes JSON blob.
+    """
+    import json as _json
+
     if isinstance(data_or_case_id, dict):
         d = data_or_case_id
         case_id         = d.get("case_id", "")
@@ -904,45 +920,54 @@ def insert_risk_score(data_or_case_id=None, score="", risk_level="",
         risk_level      = d.get("risk_level") or d.get("risk_category", "")
         notes_raw       = d.get("notes", "")
         try:
-            import json as _json
             notes_dict  = _json.loads(notes_raw) if notes_raw else {}
         except Exception:
             notes_dict  = {}
         reasoning       = d.get("reasoning") or notes_dict.get("rationale", "")
         factors         = d.get("factors") or str(notes_dict.get("red_flags", ""))
         recommendations = d.get("recommendations") or str(notes_dict.get("recommended_actions", ""))
+        notes           = notes_raw  # preserve the full JSON as-is
     else:
         case_id = data_or_case_id
-        # Handle keyword args passed directly by risk_scorer.py
+        # Merge score/risk_score and risk_level/risk_category aliases
         score      = score      or risk_score
         risk_level = risk_level or risk_category
         notes_raw  = notes
         try:
-            import json as _json
             notes_dict  = _json.loads(notes_raw) if notes_raw else {}
         except Exception:
             notes_dict  = {}
         reasoning       = reasoning       or notes_dict.get("rationale", "")
         factors         = factors         or str(notes_dict.get("red_flags", ""))
         recommendations = recommendations or str(notes_dict.get("recommended_actions", ""))
+        # notes stays as notes_raw (the full JSON string from risk_scorer.py)
 
     pk = _resolve_case_pk(case_id)
     conn = get_connection()
+    # Write to ALL alias columns so every reader finds data
     conn.execute("""
         INSERT INTO risk_scores (
-            case_id, score, risk_level, reasoning, factors, recommendations
-        ) VALUES (?, ?, ?, ?, ?, ?)
-    """, (pk, score, risk_level, reasoning, factors, recommendations))
+            case_id,
+            score, risk_score,
+            risk_level, risk_category,
+            reasoning, factors, recommendations,
+            notes
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (
+        pk,
+        score, score,          # score + risk_score
+        risk_level, risk_level,  # risk_level + risk_category
+        reasoning, factors, recommendations,
+        notes,
+    ))
     conn.commit()
     conn.close()
 
 
 def get_risk_score_by_case(case_id):
     """
-    Returns the MOST RECENT risk score for a case as a single dict,
+    Returns the MOST RECENT risk score for a case as a single normalized dict,
     or an empty dict if none exists.
-    Every caller (case_manager, dashboard, forensic_profiler) treats
-    the return value as one record, not a list.
     """
     pk = _resolve_case_pk(case_id)
     if pk is None:
