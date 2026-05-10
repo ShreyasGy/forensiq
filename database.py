@@ -505,9 +505,29 @@ def get_autopsy_by_case(case_id):
 # WITNESS HELPERS
 # ─────────────────────────────────────────────────────────────────────────────
 
-def insert_witness_statement(case_id, raw_text, timeline, key_people,
-                              key_locations, key_objects, contradictions,
-                              reliability_rating, cross_references):
+def insert_witness_statement(data_or_case_id=None, raw_text="", timeline="",
+                              key_people="", key_locations="", key_objects="",
+                              contradictions="", reliability_rating="",
+                              cross_references="", **kwargs):
+    # Accept either a dict or keyword arguments
+    if isinstance(data_or_case_id, dict):
+        d = data_or_case_id
+        case_id          = d.get("case_id", "")
+        raw_text         = (d.get("raw_text")
+                            or d.get("statement")
+                            or d.get("statement_text", ""))
+        timeline         = d.get("timeline", "")
+        key_people       = (d.get("key_people")
+                            or d.get("witness_name", ""))
+        key_locations    = d.get("key_locations", "")
+        key_objects      = d.get("key_objects", "")
+        contradictions   = d.get("contradictions", "")
+        reliability_rating = (d.get("reliability_rating")
+                              or d.get("reliability_score", ""))
+        cross_references = d.get("cross_references", "")
+    else:
+        case_id = data_or_case_id
+
     pk = _resolve_case_pk(case_id)
     conn = get_connection()
     conn.execute("""
@@ -519,7 +539,6 @@ def insert_witness_statement(case_id, raw_text, timeline, key_people,
           key_objects, contradictions, reliability_rating, cross_references))
     conn.commit()
     conn.close()
-
 
 def get_witnesses_by_case(case_id):
     pk = _resolve_case_pk(case_id)
@@ -536,13 +555,16 @@ def get_witnesses_by_case(case_id):
     result = []
     for row in rows:
         d = dict(row)
-        # Inject aliases case_manager.py expects
+        # Aliases for case_manager.py
         d["witness_name"]   = (d.get("witness_name")
-                                or d.get("name", "Unknown"))
+                                or d.get("key_people", "Unknown"))
         d["statement_text"] = (d.get("statement_text")
-                                or d.get("statement", ""))
+                                or d.get("raw_text", ""))
+        d["statement"]      = d["statement_text"]
         d["recorded_at"]    = (d.get("recorded_at")
                                 or d.get("created_at", ""))
+        d["reliability_score"] = (d.get("reliability_score")
+                                   or d.get("reliability_rating", ""))
         result.append(d)
     return result
 
