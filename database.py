@@ -29,22 +29,18 @@ def generate_case_id():
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# NORMALIZERS  (inject alias keys that the UI pages expect)
+# NORMALIZERS
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _normalize_case(row):
-    """
-    case_manager.py always reads case['case_id'] and case['name'].
-    The real DB columns are 'case_number' and 'title'.
-    This function injects the expected aliases so nothing breaks.
-    """
     d = dict(row)
     d["case_id"] = d.get("case_number", "")
-    d["name"] = d.get("title", "")
-    d["victim_name"] = d.get("victim_name", "")
-    d["case_type"] = d.get("case_type") or d.get("crime_type", "")
+    d["name"]    = d.get("title", "")
+    d["victim_name"]           = d.get("victim_name", "")
+    d["case_type"]             = d.get("case_type") or d.get("crime_type", "")
     d["assigned_investigator"] = d.get("assigned_investigator", "")
     return d
+
 
 def _normalize_tod(row):
     if row is None:
@@ -54,20 +50,17 @@ def _normalize_tod(row):
     except Exception:
         return {}
 
-    d["estimated_tod"]      = (d.get("estimated_tod")
-                                or d.get("estimated_tod_range", ""))
-    d["time_window_start"]  = (d.get("time_window_start")
-                                or d.get("central_estimate", ""))
-    d["time_window_end"]    = (d.get("time_window_end")
-                                or d.get("window_hours", ""))
+    # Canonical fields used by every module
+    d["estimated_tod"]      = d.get("estimated_tod_range") or d.get("estimated_tod", "")
+    d["time_window_start"]  = d.get("time_window_start")  or d.get("central_estimate", "")
+    d["time_window_end"]    = d.get("time_window_end")     or str(d.get("window_hours", ""))
     d["confidence_score"]   = d.get("confidence_score", "")
-    d["confidence"]         = (d.get("confidence")
-                                or d.get("confidence_score", ""))
-    d["method_used"]        = (d.get("method_used")
-                                or d.get("reasoning", ""))
+    d["confidence"]         = d.get("confidence")         or d.get("confidence_score", "")
+    d["method_used"]        = d.get("method_used")        or d.get("reasoning", "")
     d["notes"]              = (d.get("notes")
-                                or d.get("special_notes")
-                                or d.get("reasoning", ""))
+                               or d.get("special_notes")
+                               or d.get("reasoning", ""))
+    # Pass-through fields
     d["body_temp"]          = d.get("body_temp", "")
     d["ambient_temp"]       = d.get("ambient_temp", "")
     d["rigor_stage"]        = d.get("rigor_stage", "")
@@ -87,12 +80,10 @@ def _normalize_suspect(row):
     except Exception:
         return {}
 
-    # Inject aliases every module expects
-    d["suspect_name"]  = (d.get("suspect_name")
-                           or d.get("name", "Unknown"))
+    d["suspect_name"]  = d.get("suspect_name") or d.get("name", "Unknown")
     d["name"]          = d["suspect_name"]
-    d["priority_rank"] = (d.get("priority_rank")
-                           or d.get("threat_level", ""))
+    # priority_rank stored as threat_level (TEXT) in DB; expose both keys
+    d["priority_rank"] = d.get("priority_rank") or d.get("threat_level", "")
     d["threat_level"]  = d["priority_rank"]
     d["motive"]        = d.get("motive", "")
     d["alibi"]         = d.get("alibi", "")
@@ -104,10 +95,6 @@ def _normalize_suspect(row):
 
 
 def _normalize_cctv(row):
-    """
-    Ensure all CCTV sighting keys exist with safe defaults.
-    Adds 'camera_id' which was a Session-5 migration column.
-    """
     d = dict(row)
     d["camera_id"]       = d.get("camera_id")       or ""
     d["timestamp"]       = d.get("timestamp")        or ""
@@ -117,12 +104,12 @@ def _normalize_cctv(row):
     d["longitude"]       = d.get("longitude")
     d["confidence"]      = d.get("confidence")       or ""
     d["notes"]           = d.get("notes")            or ""
-    d["flagged"]         = bool(d.get("flagged")     or d.get("notes", ""))
-    d["camera_location"] = (d.get("camera_location") or d.get("location") or "")
+    d["flagged"]         = bool(d.get("flagged") or d.get("notes", ""))
+    d["camera_location"] = d.get("camera_location")  or d.get("location") or ""
     return d
-    
+
+
 def _normalize_autopsy(row):
-    """Map real autopsy columns to aliases expected by case_manager.py"""
     if row is None:
         return None
     try:
@@ -130,13 +117,12 @@ def _normalize_autopsy(row):
     except Exception:
         return row
 
-    # Map real columns → expected aliases
-    d["cause_of_death"]    = d.get("cause_of_death")    or d.get("injury_type",        "")
-    d["manner_of_death"]   = d.get("manner_of_death")   or d.get("soap_assessment",    "")
-    d["injuries"]          = d.get("injuries")          or d.get("body_location",       "")
-    d["findings"]          = d.get("findings")          or d.get("anomalies",           "")
-    d["key_terms"]         = d.get("key_terms")         or d.get("time_indicators",     "")
-    d["weapon"]            = d.get("weapon")            or d.get("weapon_type",         "")
+    d["cause_of_death"]    = d.get("cause_of_death")    or d.get("injury_type",     "")
+    d["manner_of_death"]   = d.get("manner_of_death")   or d.get("soap_assessment", "")
+    d["injuries"]          = d.get("injuries")          or d.get("body_location",   "")
+    d["findings"]          = d.get("findings")          or d.get("anomalies",        "")
+    d["key_terms"]         = d.get("key_terms")         or d.get("time_indicators", "")
+    d["weapon"]            = d.get("weapon")            or d.get("weapon_type",     "")
     d["defensive_wounds"]  = d.get("defensive_wounds",  "")
     d["signs_of_struggle"] = d.get("signs_of_struggle", "")
     d["toxicology"]        = d.get("toxicology",        "")
@@ -146,14 +132,86 @@ def _normalize_autopsy(row):
     d["soap_plan"]         = d.get("soap_plan",         "")
     return d
 
+
+def _normalize_risk(row):
+    """
+    Unify the messy risk_scores table so every caller gets the same keys.
+
+    DB columns (legacy):  id, case_id, score, risk_level, reasoning, factors,
+                          recommendations, created_at
+    New columns added by risk_scorer.py migration:
+                          risk_score, risk_category, notes
+
+    Callers expect:
+      case_manager.py  → risk['score'], risk['risk_level'], risk['factors'],
+                          risk['calculated_at']
+      dashboard.py     → risk['risk_score'], risk['risk_category'],
+                          risk['score'], risk['category']
+      risk_scorer.py   → risk['risk_score'], risk['risk_category']
+      forensic_profiler→ risk['score'], risk['risk_level']
+    """
+    if row is None:
+        return {}
+    try:
+        d = dict(row)
+    except Exception:
+        return {}
+
+    # Resolve score — stored under either 'score' or 'risk_score'
+    score_val = d.get("risk_score") if d.get("risk_score") is not None else d.get("score", 0)
+    d["score"]      = score_val
+    d["risk_score"] = score_val
+
+    # Resolve category / level
+    cat_val = d.get("risk_category") or d.get("risk_level", "Unknown")
+    d["risk_level"]    = cat_val
+    d["risk_category"] = cat_val
+    d["category"]      = cat_val
+
+    # Resolve notes / factors
+    notes_val   = d.get("notes")   or d.get("factors", "")
+    factors_val = d.get("factors") or d.get("notes",   "")
+    d["notes"]           = notes_val
+    d["factors"]         = factors_val
+    d["recommendations"] = d.get("recommendations", "")
+    d["reasoning"]       = d.get("reasoning", "")
+
+    # Alias for case_manager.py
+    d["calculated_at"] = d.get("created_at", "")
+
+    return d
+
+
+def _normalize_witness(row):
+    if row is None:
+        return {}
+    try:
+        d = dict(row)
+    except Exception:
+        return {}
+
+    # witness_name: stored in its own column (after migration) or falls back to key_people
+    d["witness_name"]      = (d.get("witness_name")
+                               or d.get("key_people", "Unknown"))
+    d["statement_text"]    = (d.get("statement_text")
+                               or d.get("raw_text")
+                               or d.get("statement", ""))
+    d["statement"]         = d["statement_text"]
+    d["recorded_at"]       = d.get("recorded_at") or d.get("created_at", "")
+    d["reliability_score"] = (d.get("reliability_score")
+                               or d.get("reliability_rating", ""))
+    d["contradictions"]    = d.get("contradictions", "")
+    return d
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # PK RESOLVER
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _resolve_case_pk(case_id):
     """
-    Accept either an integer PK or a 'FQ-YYYYMMDD-XXXX' string.
-    Returns the integer id used in the cases table, or None on failure.
+    Accept an int PK or an 'FQ-YYYYMMDD-XXXX' string.
+    Returns the integer id used in the cases table, or None.
     """
     if isinstance(case_id, int):
         return case_id
@@ -164,7 +222,7 @@ def _resolve_case_pk(case_id):
         ).fetchone()
         if row:
             return row["id"]
-        return int(case_id)          # handles numeric strings
+        return int(case_id)
     except (ValueError, TypeError):
         return None
     finally:
@@ -172,7 +230,7 @@ def _resolve_case_pk(case_id):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# DATABASE INITIALISATION  (creates tables + runs ALL migrations)
+# DATABASE INITIALISATION
 # ─────────────────────────────────────────────────────────────────────────────
 
 def init_db():
@@ -233,22 +291,42 @@ def init_db():
         )
     """)
 
+    # Extra columns added by demo_mode.py
+    for col, col_type in [
+        ("cause_of_death",  "TEXT"),
+        ("manner_of_death", "TEXT"),
+        ("injuries",        "TEXT"),
+        ("findings",        "TEXT"),
+        ("key_terms",       "TEXT"),
+    ]:
+        try:
+            c.execute(f"ALTER TABLE autopsy_reports ADD COLUMN {col} {col_type}")
+        except sqlite3.OperationalError:
+            pass
+
     # ── witness_statements ─────────────────────────────────────────────────
     c.execute("""
         CREATE TABLE IF NOT EXISTS witness_statements (
-            id                INTEGER PRIMARY KEY AUTOINCREMENT,
-            case_id           INTEGER,
-            raw_text          TEXT,
-            timeline          TEXT,
-            key_people        TEXT,
-            key_locations     TEXT,
-            key_objects       TEXT,
-            contradictions    TEXT,
+            id                 INTEGER PRIMARY KEY AUTOINCREMENT,
+            case_id            INTEGER,
+            witness_name       TEXT,
+            raw_text           TEXT,
+            timeline           TEXT,
+            key_people         TEXT,
+            key_locations      TEXT,
+            key_objects        TEXT,
+            contradictions     TEXT,
             reliability_rating TEXT,
-            cross_references  TEXT,
-            created_at        TEXT DEFAULT (datetime('now'))
+            cross_references   TEXT,
+            created_at         TEXT DEFAULT (datetime('now'))
         )
     """)
+
+    # witness_name column may be absent on older DBs
+    try:
+        c.execute("ALTER TABLE witness_statements ADD COLUMN witness_name TEXT")
+    except sqlite3.OperationalError:
+        pass
 
     # ── tod_estimates ──────────────────────────────────────────────────────
     c.execute("""
@@ -277,25 +355,33 @@ def init_db():
         )
     """)
 
+    # Migrate any missing TOD columns
     for col, col_type in [
-        ("body_weight",          "REAL"),
-        ("ambient_temp",         "REAL"),
-        ("body_temp",            "REAL"),
-        ("rigor_stage",          "TEXT"),
-        ("livor_stage",          "TEXT"),
-        ("hypostasis_color",     "TEXT"),
-        ("decomp_stage",         "TEXT"),
-        ("body_location",        "TEXT"),
-        ("clothing_coverage",    "TEXT"),
-        ("discovery_datetime",   "TEXT"),
-        ("estimated_tod_range",  "TEXT"),
-        ("central_estimate",     "TEXT"),
-        ("window_hours",         "REAL"),
-        ("confidence_score",     "REAL"),
-        ("reasoning",            "TEXT"),
-        ("factors_increased",    "TEXT"),
-        ("factors_reduced",      "TEXT"),
-        ("special_notes",        "TEXT"),
+        ("body_weight",         "REAL"),
+        ("ambient_temp",        "REAL"),
+        ("body_temp",           "REAL"),
+        ("rigor_stage",         "TEXT"),
+        ("livor_stage",         "TEXT"),
+        ("hypostasis_color",    "TEXT"),
+        ("decomp_stage",        "TEXT"),
+        ("body_location",       "TEXT"),
+        ("clothing_coverage",   "TEXT"),
+        ("discovery_datetime",  "TEXT"),
+        ("estimated_tod_range", "TEXT"),
+        ("central_estimate",    "TEXT"),
+        ("window_hours",        "REAL"),
+        ("confidence_score",    "REAL"),
+        ("reasoning",           "TEXT"),
+        ("factors_increased",   "TEXT"),
+        ("factors_reduced",     "TEXT"),
+        ("special_notes",       "TEXT"),
+        # Aliases stored by demo_mode.py
+        ("estimated_tod",       "TEXT"),
+        ("time_window_start",   "TEXT"),
+        ("time_window_end",     "TEXT"),
+        ("method_used",         "TEXT"),
+        ("notes",               "TEXT"),
+        ("confidence",          "TEXT"),
     ]:
         try:
             c.execute(f"ALTER TABLE tod_estimates ADD COLUMN {col} {col_type}")
@@ -308,16 +394,27 @@ def init_db():
             id           INTEGER PRIMARY KEY AUTOINCREMENT,
             case_id      INTEGER,
             name         TEXT,
+            suspect_name TEXT,
             age          TEXT,
             gender       TEXT,
             description  TEXT,
             motive       TEXT,
             alibi        TEXT,
             threat_level TEXT,
+            priority_rank TEXT,
             notes        TEXT,
             created_at   TEXT DEFAULT (datetime('now'))
         )
     """)
+
+    for col, col_type in [
+        ("suspect_name",  "TEXT"),
+        ("priority_rank", "TEXT"),
+    ]:
+        try:
+            c.execute(f"ALTER TABLE suspects ADD COLUMN {col} {col_type}")
+        except sqlite3.OperationalError:
+            pass
 
     # ── risk_scores ────────────────────────────────────────────────────────
     c.execute("""
@@ -325,13 +422,27 @@ def init_db():
             id              INTEGER PRIMARY KEY AUTOINCREMENT,
             case_id         INTEGER,
             score           REAL,
+            risk_score      REAL,
             risk_level      TEXT,
+            risk_category   TEXT,
             reasoning       TEXT,
             factors         TEXT,
             recommendations TEXT,
+            notes           TEXT,
             created_at      TEXT DEFAULT (datetime('now'))
         )
     """)
+
+    # Migrate risk_scores columns that risk_scorer.py expects
+    for col, col_type in [
+        ("risk_score",    "REAL"),
+        ("risk_category", "TEXT"),
+        ("notes",         "TEXT"),
+    ]:
+        try:
+            c.execute(f"ALTER TABLE risk_scores ADD COLUMN {col} {col_type}")
+        except sqlite3.OperationalError:
+            pass
 
     # ── cctv_sightings ─────────────────────────────────────────────────────
     c.execute("""
@@ -350,13 +461,12 @@ def init_db():
         )
     """)
 
-    # Migration: add camera_id if the table already existed without it
     try:
         c.execute("ALTER TABLE cctv_sightings ADD COLUMN camera_id TEXT")
     except sqlite3.OperationalError:
         pass
 
-    # ── tracked_persons  (NEW — Session 5) ────────────────────────────────
+    # ── tracked_persons ────────────────────────────────────────────────────
     c.execute("""
         CREATE TABLE IF NOT EXISTS tracked_persons (
             id                      INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -376,6 +486,18 @@ def init_db():
             last_seen_time          TEXT,
             cctv_description        TEXT,
             created_at              TEXT DEFAULT (datetime('now'))
+        )
+    """)
+
+    # ── crime_patterns ─────────────────────────────────────────────────────
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS crime_patterns (
+            id              INTEGER PRIMARY KEY AUTOINCREMENT,
+            case_ids        TEXT,
+            pattern_summary TEXT,
+            convergence_pct REAL,
+            common_factors  TEXT,
+            created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
 
@@ -468,13 +590,15 @@ def insert_autopsy_report(data_or_case_id=None, filename="", raw_text="",
                            soap_assessment="", soap_plan="",
                            injury_type="", body_location="", weapon_type="",
                            defensive_wounds="", signs_of_struggle="",
-                           toxicology="", time_indicators="", anomalies=""):
-    # Accept either a dict or individual keyword arguments
+                           toxicology="", time_indicators="", anomalies="",
+                           cause_of_death="", manner_of_death="",
+                           injuries="", findings="", key_terms="", **kwargs):
+
     if isinstance(data_or_case_id, dict):
         d = data_or_case_id
-        case_id       = d.get("case_id", "")
-        filename      = d.get("filename", "")
-        raw_text      = d.get("raw_text", "")
+        case_id           = d.get("case_id", "")
+        filename          = d.get("filename", d.get("file_name", ""))
+        raw_text          = d.get("raw_text", "")
         soap_subjective   = d.get("soap_subjective", "")
         soap_objective    = d.get("soap_objective", "")
         soap_assessment   = d.get("soap_assessment", "")
@@ -487,6 +611,11 @@ def insert_autopsy_report(data_or_case_id=None, filename="", raw_text="",
         toxicology        = d.get("toxicology", "")
         time_indicators   = d.get("time_indicators", "")
         anomalies         = d.get("anomalies", "")
+        cause_of_death    = d.get("cause_of_death", "")
+        manner_of_death   = d.get("manner_of_death", "")
+        injuries          = d.get("injuries", "")
+        findings          = d.get("findings", "")
+        key_terms         = d.get("key_terms", "")
     else:
         case_id = data_or_case_id
 
@@ -494,69 +623,74 @@ def insert_autopsy_report(data_or_case_id=None, filename="", raw_text="",
     conn = get_connection()
     conn.execute("""
         INSERT INTO autopsy_reports (
-            case_id, filename, raw_text, soap_subjective, soap_objective,
-            soap_assessment, soap_plan, injury_type, body_location,
-            weapon_type, defensive_wounds, signs_of_struggle,
-            toxicology, time_indicators, anomalies
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """, (pk, filename, raw_text, soap_subjective, soap_objective,
-          soap_assessment, soap_plan, injury_type, body_location,
-          weapon_type, defensive_wounds, signs_of_struggle,
-          toxicology, time_indicators, anomalies))
+            case_id, filename, raw_text,
+            soap_subjective, soap_objective, soap_assessment, soap_plan,
+            injury_type, body_location, weapon_type,
+            defensive_wounds, signs_of_struggle, toxicology,
+            time_indicators, anomalies,
+            cause_of_death, manner_of_death, injuries, findings, key_terms
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (pk, filename, raw_text,
+          soap_subjective, soap_objective, soap_assessment, soap_plan,
+          injury_type, body_location, weapon_type,
+          defensive_wounds, signs_of_struggle, toxicology,
+          time_indicators, anomalies,
+          cause_of_death, manner_of_death, injuries, findings, key_terms))
     conn.commit()
     conn.close()
 
+
 def get_autopsy_by_case(case_id):
     pk = _resolve_case_pk(case_id)
+    if pk is None:
+        return []
     conn = get_connection()
-    conn.row_factory = sqlite3.Row
-    cur = conn.cursor()
-    cur.execute(
+    rows = conn.execute(
         "SELECT * FROM autopsy_reports WHERE case_id = ? ORDER BY id DESC",
         (pk,)
-    )
-    rows = cur.fetchall()
+    ).fetchall()
     conn.close()
 
     result = []
     for row in rows:
         d = dict(row)
-        # Inject aliases case_manager.py expects
+        # Resolve the aliases case_manager.py and others expect
         d["cause_of_death"] = (d.get("cause_of_death")
                                 or d.get("injury_type")
                                 or d.get("soap_assessment", ""))
         d["report_text"]    = (d.get("report_text")
                                 or d.get("raw_text")
                                 or d.get("soap_subjective", ""))
-        d["uploaded_at"]    = (d.get("uploaded_at")
-                                or d.get("created_at", ""))
+        d["uploaded_at"]    = d.get("uploaded_at") or d.get("created_at", "")
         result.append(d)
     return result
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # WITNESS HELPERS
 # ─────────────────────────────────────────────────────────────────────────────
 
-def insert_witness_statement(data_or_case_id=None, raw_text="", timeline="",
-                              key_people="", key_locations="", key_objects="",
+def insert_witness_statement(data_or_case_id=None, witness_name="",
+                              raw_text="", timeline="", key_people="",
+                              key_locations="", key_objects="",
                               contradictions="", reliability_rating="",
                               cross_references="", **kwargs):
-    # Accept either a dict or keyword arguments
     if isinstance(data_or_case_id, dict):
         d = data_or_case_id
-        case_id          = d.get("case_id", "")
-        raw_text         = (d.get("raw_text")
-                            or d.get("statement")
-                            or d.get("statement_text", ""))
-        timeline         = d.get("timeline", "")
-        key_people       = (d.get("key_people")
-                            or d.get("witness_name", ""))
-        key_locations    = d.get("key_locations", "")
-        key_objects      = d.get("key_objects", "")
-        contradictions   = d.get("contradictions", "")
+        case_id            = d.get("case_id", "")
+        # Accept every field name any caller might use
+        witness_name       = (d.get("witness_name", ""))
+        raw_text           = (d.get("raw_text")
+                              or d.get("statement")
+                              or d.get("statement_text", ""))
+        timeline           = d.get("timeline", "")
+        key_people         = d.get("key_people", "")
+        key_locations      = d.get("key_locations", "")
+        key_objects        = d.get("key_objects", "")
+        contradictions     = d.get("contradictions", "")
         reliability_rating = (d.get("reliability_rating")
                               or d.get("reliability_score", ""))
-        cross_references = d.get("cross_references", "")
+        cross_references   = d.get("cross_references", "")
     else:
         case_id = data_or_case_id
 
@@ -564,45 +698,34 @@ def insert_witness_statement(data_or_case_id=None, raw_text="", timeline="",
     conn = get_connection()
     conn.execute("""
         INSERT INTO witness_statements (
-            case_id, raw_text, timeline, key_people, key_locations,
-            key_objects, contradictions, reliability_rating, cross_references
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """, (pk, raw_text, timeline, key_people, key_locations,
-          key_objects, contradictions, reliability_rating, cross_references))
+            case_id, witness_name, raw_text, timeline,
+            key_people, key_locations, key_objects,
+            contradictions, reliability_rating, cross_references
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (pk, witness_name, raw_text, timeline,
+          key_people, key_locations, key_objects,
+          contradictions, reliability_rating, cross_references))
     conn.commit()
     conn.close()
 
+
 def get_witnesses_by_case(case_id):
     pk = _resolve_case_pk(case_id)
+    if pk is None:
+        return []
     conn = get_connection()
-    conn.row_factory = sqlite3.Row
-    cur = conn.cursor()
-    cur.execute(
+    rows = conn.execute(
         "SELECT * FROM witness_statements WHERE case_id = ? ORDER BY id DESC",
         (pk,)
-    )
-    rows = cur.fetchall()
+    ).fetchall()
     conn.close()
+    return [_normalize_witness(r) for r in rows]
 
-    result = []
-    for row in rows:
-        d = dict(row)
-        # Aliases for case_manager.py
-        d["witness_name"]   = (d.get("witness_name")
-                                or d.get("key_people", "Unknown"))
-        d["statement_text"] = (d.get("statement_text")
-                                or d.get("raw_text", ""))
-        d["statement"]      = d["statement_text"]
-        d["recorded_at"]    = (d.get("recorded_at")
-                                or d.get("created_at", ""))
-        d["reliability_score"] = (d.get("reliability_score")
-                                   or d.get("reliability_rating", ""))
-        result.append(d)
-    return result
 
 # ─────────────────────────────────────────────────────────────────────────────
 # TOD HELPERS
 # ─────────────────────────────────────────────────────────────────────────────
+
 def insert_tod_estimate(data_or_case_id=None, body_temp="", ambient_temp="",
                         body_weight="", rigor_stage="", livor_stage="",
                         hypostasis_color="", decomp_stage="", body_location="",
@@ -610,35 +733,56 @@ def insert_tod_estimate(data_or_case_id=None, body_temp="", ambient_temp="",
                         estimated_tod_range="", central_estimate="",
                         window_hours="", confidence_score="", reasoning="",
                         factors_increased="", factors_reduced="",
-                        special_notes="", **kwargs):
+                        special_notes="",
+                        # aliases that demo_mode.py uses
+                        estimated_tod="", time_window_start="",
+                        time_window_end="", method_used="", notes="",
+                        confidence="", **kwargs):
+
     if isinstance(data_or_case_id, dict):
         d = data_or_case_id
-        case_id            = d.get("case_id", "")
-        body_temp          = d.get("body_temp", "")
-        ambient_temp       = d.get("ambient_temp", "")
-        body_weight        = d.get("body_weight", "")
-        rigor_stage        = d.get("rigor_stage", "")
-        livor_stage        = d.get("livor_stage", "")
-        hypostasis_color   = d.get("hypostasis_color", "")
-        decomp_stage       = d.get("decomp_stage", "")
-        body_location      = d.get("body_location", "")
-        clothing_coverage  = d.get("clothing_coverage", "")
-        discovery_datetime = d.get("discovery_datetime", "")
+        case_id             = d.get("case_id", "")
+        body_temp           = d.get("body_temp", "")
+        ambient_temp        = d.get("ambient_temp", "")
+        body_weight         = d.get("body_weight", "")
+        rigor_stage         = d.get("rigor_stage", "")
+        livor_stage         = d.get("livor_stage", "")
+        hypostasis_color    = d.get("hypostasis_color", "")
+        decomp_stage        = d.get("decomp_stage", "")
+        body_location       = d.get("body_location", "")
+        clothing_coverage   = d.get("clothing_coverage", "")
+        discovery_datetime  = d.get("discovery_datetime", "")
+        # Resolve estimated_tod_range from all possible keys
         estimated_tod_range = (d.get("estimated_tod_range")
                                 or d.get("estimated_tod", ""))
-        central_estimate   = (d.get("central_estimate")
-                               or d.get("time_window_start", ""))
-        window_hours       = (d.get("window_hours")
-                               or d.get("time_window_end", ""))
-        confidence_score   = d.get("confidence_score", "")
-        reasoning          = (d.get("reasoning")
-                               or d.get("notes")
-                               or d.get("method_used", ""))
-        factors_increased  = d.get("factors_increased", "")
-        factors_reduced    = d.get("factors_reduced", "")
-        special_notes      = d.get("special_notes", "")
+        central_estimate    = (d.get("central_estimate")
+                                or d.get("time_window_start", ""))
+        window_hours        = (d.get("window_hours")
+                                or d.get("time_window_end", ""))
+        confidence_score    = (d.get("confidence_score")
+                                or d.get("confidence", ""))
+        reasoning           = (d.get("reasoning")
+                                or d.get("notes")
+                                or d.get("method_used", ""))
+        factors_increased   = d.get("factors_increased", "")
+        factors_reduced     = d.get("factors_reduced", "")
+        special_notes       = d.get("special_notes", "")
+        # Extra alias fields
+        estimated_tod       = estimated_tod_range
+        time_window_start   = central_estimate
+        time_window_end     = str(window_hours)
+        method_used         = reasoning
+        notes               = reasoning
+        confidence          = str(confidence_score)
     else:
         case_id = data_or_case_id
+        # Fill derived aliases for non-dict calls
+        estimated_tod     = estimated_tod_range
+        time_window_start = central_estimate
+        time_window_end   = str(window_hours)
+        method_used       = reasoning
+        notes             = reasoning
+        confidence        = str(confidence_score)
 
     pk = _resolve_case_pk(case_id)
     conn = get_connection()
@@ -646,18 +790,34 @@ def insert_tod_estimate(data_or_case_id=None, body_temp="", ambient_temp="",
         INSERT INTO tod_estimates (
             case_id, body_temp, ambient_temp, body_weight, rigor_stage,
             livor_stage, hypostasis_color, decomp_stage, body_location,
-            clothing_coverage, discovery_datetime, estimated_tod_range,
-            central_estimate, window_hours, confidence_score, reasoning,
-            factors_increased, factors_reduced, special_notes
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            clothing_coverage, discovery_datetime,
+            estimated_tod_range, central_estimate, window_hours,
+            confidence_score, reasoning, factors_increased, factors_reduced,
+            special_notes,
+            estimated_tod, time_window_start, time_window_end,
+            method_used, notes, confidence
+        ) VALUES (
+            ?, ?, ?, ?, ?,
+            ?, ?, ?, ?,
+            ?, ?,
+            ?, ?, ?,
+            ?, ?, ?, ?,
+            ?,
+            ?, ?, ?,
+            ?, ?, ?
+        )
     """, (pk, body_temp, ambient_temp, body_weight, rigor_stage,
           livor_stage, hypostasis_color, decomp_stage, body_location,
-          clothing_coverage, discovery_datetime, estimated_tod_range,
-          central_estimate, window_hours, confidence_score, reasoning,
-          factors_increased, factors_reduced, special_notes))
+          clothing_coverage, discovery_datetime,
+          estimated_tod_range, central_estimate, window_hours,
+          confidence_score, reasoning, factors_increased, factors_reduced,
+          special_notes,
+          estimated_tod, time_window_start, time_window_end,
+          method_used, notes, confidence))
     conn.commit()
     conn.close()
-                            
+
+
 def get_tod_by_case(case_id):
     pk = _resolve_case_pk(case_id)
     if pk is None:
@@ -671,6 +831,7 @@ def get_tod_by_case(case_id):
     return [_normalize_tod(r) for r in rows]
 
 
+# Keep legacy alias used by some modules
 def get_tod_estimates_by_case(case_id):
     return get_tod_by_case(case_id)
 
@@ -687,34 +848,41 @@ def get_all_tod_estimates():
 # ─────────────────────────────────────────────────────────────────────────────
 # SUSPECT HELPERS
 # ─────────────────────────────────────────────────────────────────────────────
+
 def insert_suspect(data_or_case_id=None, name="", age="", gender="",
                    description="", motive="", alibi="", threat_level="",
-                   notes="", **kwargs):
+                   notes="", suspect_name="", priority_rank="", **kwargs):
+
     if isinstance(data_or_case_id, dict):
         d = data_or_case_id
-        case_id      = d.get("case_id", "")
-        name         = (d.get("name")
-                        or d.get("suspect_name", ""))
-        age          = d.get("age", "")
-        gender       = d.get("gender", "")
-        description  = d.get("description", "")
-        motive       = d.get("motive", "")
-        alibi        = d.get("alibi", "")
-        threat_level = (d.get("threat_level")
-                        or str(d.get("priority_rank", "")))
-        notes        = d.get("notes", "")
+        case_id       = d.get("case_id", "")
+        suspect_name  = d.get("suspect_name") or d.get("name", "")
+        name          = suspect_name
+        age           = d.get("age", "")
+        gender        = d.get("gender", "")
+        description   = d.get("description", "")
+        motive        = d.get("motive", "")
+        alibi         = d.get("alibi", "")
+        # priority_rank from demo_mode; threat_level from forensic_profiler
+        priority_rank = str(d.get("priority_rank", d.get("threat_level", "")))
+        threat_level  = priority_rank
+        notes         = d.get("notes", "")
     else:
         case_id = data_or_case_id
+        if not name and suspect_name:
+            name = suspect_name
+        if not threat_level and priority_rank:
+            threat_level = str(priority_rank)
 
     pk = _resolve_case_pk(case_id)
     conn = get_connection()
     conn.execute("""
         INSERT INTO suspects (
-            case_id, name, age, gender, description,
-            motive, alibi, threat_level, notes
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """, (pk, name, age, gender, description,
-          motive, alibi, threat_level, notes))
+            case_id, name, suspect_name, age, gender, description,
+            motive, alibi, threat_level, priority_rank, notes
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (pk, name, name, age, gender, description,
+          motive, alibi, threat_level, threat_level, notes))
     conn.commit()
     conn.close()
 
@@ -736,30 +904,59 @@ def get_suspects_by_case(case_id):
 # RISK SCORE HELPERS
 # ─────────────────────────────────────────────────────────────────────────────
 
-def insert_risk_score(case_id, score, risk_level, reasoning,
-                      factors, recommendations):
+def insert_risk_score(case_id, risk_score=None, risk_category=None,
+                      notes=None,
+                      # Legacy positional args kept for backward compatibility
+                      score=None, risk_level=None, reasoning=None,
+                      factors=None, recommendations=None, **kwargs):
+    """
+    Accepts both the new keyword style from risk_scorer.py:
+        insert_risk_score(case_id=, risk_score=, risk_category=, notes=)
+    and the old positional style:
+        insert_risk_score(case_id, score, risk_level, reasoning, factors, recommendations)
+    """
+    # Resolve values from either calling convention
+    resolved_score    = risk_score    if risk_score    is not None else score
+    resolved_category = risk_category if risk_category is not None else risk_level
+    resolved_notes    = notes         if notes         is not None else factors
+    resolved_reasoning     = reasoning     or ""
+    resolved_recommendations = recommendations or ""
+
     pk = _resolve_case_pk(case_id)
     conn = get_connection()
     conn.execute("""
         INSERT INTO risk_scores (
-            case_id, score, risk_level, reasoning, factors, recommendations
-        ) VALUES (?, ?, ?, ?, ?, ?)
-    """, (pk, score, risk_level, reasoning, factors, recommendations))
+            case_id, score, risk_score,
+            risk_level, risk_category,
+            reasoning, factors, recommendations, notes
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (pk,
+          resolved_score, resolved_score,
+          resolved_category, resolved_category,
+          resolved_reasoning,
+          resolved_notes, resolved_recommendations,
+          resolved_notes))
     conn.commit()
     conn.close()
 
 
 def get_risk_score_by_case(case_id):
+    """
+    Returns the MOST RECENT risk score for a case as a single dict,
+    or an empty dict if none exists.
+    Every caller (case_manager, dashboard, forensic_profiler) treats
+    the return value as one record, not a list.
+    """
     pk = _resolve_case_pk(case_id)
     if pk is None:
-        return []
+        return {}
     conn = get_connection()
-    rows = conn.execute(
-        "SELECT * FROM risk_scores WHERE case_id = ? ORDER BY created_at DESC",
+    row = conn.execute(
+        "SELECT * FROM risk_scores WHERE case_id = ? ORDER BY created_at DESC LIMIT 1",
         (pk,)
-    ).fetchall()
+    ).fetchone()
     conn.close()
-    return [dict(r) for r in rows]
+    return _normalize_risk(row) if row else {}
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -769,11 +966,6 @@ def get_risk_score_by_case(case_id):
 def insert_cctv_sighting(case_id, timestamp, location, description,
                           latitude, longitude, confidence, notes,
                           camera_id=""):
-    """
-    Save one CCTV sighting row.
-    camera_id is optional (empty string by default) for backward compatibility
-    with any code that was calling the old 8-parameter version.
-    """
     pk = _resolve_case_pk(case_id)
     conn = get_connection()
     conn.execute("""
@@ -801,7 +993,7 @@ def get_cctv_by_case(case_id):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# TRACKED PERSON HELPERS  (NEW — Session 5)
+# TRACKED PERSON HELPERS
 # ─────────────────────────────────────────────────────────────────────────────
 
 def insert_tracked_person(case_id, name, alias, height_cm, weight_kg,
@@ -847,29 +1039,21 @@ def get_tracked_person_by_id(person_id):
     conn.close()
     return dict(row) if row else None
 
-# ── CRIME PATTERNS ─────────────────────────────────────────────────────────────
+
+# ─────────────────────────────────────────────────────────────────────────────
+# CRIME PATTERN HELPERS
+# ─────────────────────────────────────────────────────────────────────────────
 
 def insert_crime_pattern(case_ids_list, pattern_summary, convergence_pct, common_factors):
     conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS crime_patterns (
-            id              INTEGER PRIMARY KEY AUTOINCREMENT,
-            case_ids        TEXT,
-            pattern_summary TEXT,
-            convergence_pct REAL,
-            common_factors  TEXT,
-            created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
-    cursor.execute("""
+    conn.execute("""
         INSERT INTO crime_patterns (case_ids, pattern_summary, convergence_pct, common_factors)
         VALUES (?, ?, ?, ?)
     """, (
         json.dumps(case_ids_list),
         pattern_summary,
         float(convergence_pct),
-        common_factors if isinstance(common_factors, str) else json.dumps(common_factors)
+        common_factors if isinstance(common_factors, str) else json.dumps(common_factors),
     ))
     conn.commit()
     conn.close()
@@ -877,10 +1061,10 @@ def insert_crime_pattern(case_ids_list, pattern_summary, convergence_pct, common
 
 def get_all_patterns():
     conn = get_connection()
-    cursor = conn.cursor()
     try:
-        cursor.execute("SELECT * FROM crime_patterns ORDER BY created_at DESC")
-        rows = cursor.fetchall()
+        rows = conn.execute(
+            "SELECT * FROM crime_patterns ORDER BY created_at DESC"
+        ).fetchall()
     except Exception:
         rows = []
     conn.close()
