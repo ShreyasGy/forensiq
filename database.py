@@ -407,11 +407,33 @@ def delete_case(case_id):
 # AUTOPSY HELPERS
 # ─────────────────────────────────────────────────────────────────────────────
 
-def insert_autopsy_report(case_id, filename, raw_text, soap_subjective,
-                           soap_objective, soap_assessment, soap_plan,
-                           injury_type, body_location, weapon_type,
-                           defensive_wounds, signs_of_struggle,
-                           toxicology, time_indicators, anomalies):
+def insert_autopsy_report(data_or_case_id=None, filename="", raw_text="",
+                           soap_subjective="", soap_objective="",
+                           soap_assessment="", soap_plan="",
+                           injury_type="", body_location="", weapon_type="",
+                           defensive_wounds="", signs_of_struggle="",
+                           toxicology="", time_indicators="", anomalies=""):
+    # Accept either a dict or individual keyword arguments
+    if isinstance(data_or_case_id, dict):
+        d = data_or_case_id
+        case_id       = d.get("case_id", "")
+        filename      = d.get("filename", "")
+        raw_text      = d.get("raw_text", "")
+        soap_subjective   = d.get("soap_subjective", "")
+        soap_objective    = d.get("soap_objective", "")
+        soap_assessment   = d.get("soap_assessment", "")
+        soap_plan         = d.get("soap_plan", "")
+        injury_type       = d.get("injury_type", "")
+        body_location     = d.get("body_location", "")
+        weapon_type       = d.get("weapon_type", "")
+        defensive_wounds  = d.get("defensive_wounds", "")
+        signs_of_struggle = d.get("signs_of_struggle", "")
+        toxicology        = d.get("toxicology", "")
+        time_indicators   = d.get("time_indicators", "")
+        anomalies         = d.get("anomalies", "")
+    else:
+        case_id = data_or_case_id
+
     pk = _resolve_case_pk(case_id)
     conn = get_connection()
     conn.execute("""
@@ -427,7 +449,6 @@ def insert_autopsy_report(case_id, filename, raw_text, soap_subjective,
           toxicology, time_indicators, anomalies))
     conn.commit()
     conn.close()
-
 
 def get_autopsy_by_case(case_id):
     pk = _resolve_case_pk(case_id)
