@@ -89,6 +89,30 @@ def _normalize_cctv(row):
     d["notes"] = d.get("notes") or ""
     return d
 
+def _normalize_autopsy(row):
+    """Map real autopsy columns to aliases expected by case_manager.py"""
+    if row is None:
+        return None
+    try:
+        d = dict(row)
+    except Exception:
+        return row
+
+    # Map real columns → expected aliases
+    d["cause_of_death"]    = d.get("cause_of_death")    or d.get("injury_type",        "")
+    d["manner_of_death"]   = d.get("manner_of_death")   or d.get("soap_assessment",    "")
+    d["injuries"]          = d.get("injuries")          or d.get("body_location",       "")
+    d["findings"]          = d.get("findings")          or d.get("anomalies",           "")
+    d["key_terms"]         = d.get("key_terms")         or d.get("time_indicators",     "")
+    d["weapon"]            = d.get("weapon")            or d.get("weapon_type",         "")
+    d["defensive_wounds"]  = d.get("defensive_wounds",  "")
+    d["signs_of_struggle"] = d.get("signs_of_struggle", "")
+    d["toxicology"]        = d.get("toxicology",        "")
+    d["soap_subjective"]   = d.get("soap_subjective",   "")
+    d["soap_objective"]    = d.get("soap_objective",    "")
+    d["soap_assessment"]   = d.get("soap_assessment",   "")
+    d["soap_plan"]         = d.get("soap_plan",         "")
+    return d
 
 # ─────────────────────────────────────────────────────────────────────────────
 # PK RESOLVER
