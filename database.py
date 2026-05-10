@@ -46,30 +46,58 @@ def _normalize_case(row):
     d["assigned_investigator"] = d.get("assigned_investigator", "")
     return d
 
-
 def _normalize_tod(row):
-    """
-    case_manager.py reads: t['estimated_tod'], t['method_used'],
-    t['confidence'], t['notes'].
-    The real DB columns have different names — map them here.
-    """
-    d = dict(row)
-    d["estimated_tod"] = d.get("estimated_tod_range", "")
-    d["method_used"] = "Henssge + Rigor + Livor + Decomposition"
-    score = d.get("confidence_score", 0) or 0
-    d["confidence"] = f"{int(score)}%" if score else "N/A"
-    d["notes"] = d.get("special_notes", "") or d.get("reasoning", "")
+    if row is None:
+        return {}
+    try:
+        d = dict(row)
+    except Exception:
+        return {}
+
+    # Inject aliases every module expects
+    d["estimated_tod"]      = (d.get("estimated_tod")
+                                or d.get("estimated_tod_range", ""))
+    d["time_window_start"]  = (d.get("time_window_start")
+                                or d.get("central_estimate", ""))
+    d["time_window_end"]    = (d.get("time_window_end")
+                                or d.get("window_hours", ""))
+    d["confidence_score"]   = d.get("confidence_score", "")
+    d["method_used"]        = (d.get("method_used")
+                                or d.get("reasoning", ""))
+    d["notes"]              = (d.get("notes")
+                                or d.get("special_notes")
+                                or d.get("reasoning", ""))
+    d["body_temp"]          = d.get("body_temp", "")
+    d["ambient_temp"]       = d.get("ambient_temp", "")
+    d["rigor_stage"]        = d.get("rigor_stage", "")
+    d["livor_stage"]        = d.get("livor_stage", "")
+    d["reasoning"]          = d.get("reasoning", "")
+    d["factors_increased"]  = d.get("factors_increased", "")
+    d["factors_reduced"]    = d.get("factors_reduced", "")
+    d["special_notes"]      = d.get("special_notes", "")
     return d
 
-
 def _normalize_suspect(row):
-    """
-    case_manager.py reads: s['suspect_name'], s['relation'].
-    The real DB columns are 'name' and 'motive' — map them here.
-    """
-    d = dict(row)
-    d["suspect_name"] = d.get("name", "")
-    d["relation"] = d.get("motive", "")
+    if row is None:
+        return {}
+    try:
+        d = dict(row)
+    except Exception:
+        return {}
+
+    # Inject aliases every module expects
+    d["suspect_name"]  = (d.get("suspect_name")
+                           or d.get("name", "Unknown"))
+    d["name"]          = d["suspect_name"]
+    d["priority_rank"] = (d.get("priority_rank")
+                           or d.get("threat_level", ""))
+    d["threat_level"]  = d["priority_rank"]
+    d["motive"]        = d.get("motive", "")
+    d["alibi"]         = d.get("alibi", "")
+    d["notes"]         = d.get("notes", "")
+    d["age"]           = d.get("age", "")
+    d["gender"]        = d.get("gender", "")
+    d["description"]   = d.get("description", "")
     return d
 
 
@@ -573,14 +601,43 @@ def get_witnesses_by_case(case_id):
 # ─────────────────────────────────────────────────────────────────────────────
 # TOD HELPERS
 # ─────────────────────────────────────────────────────────────────────────────
+def insert_tod_estimate(data_or_case_id=None, body_temp="", ambient_temp="",
+                        body_weight="", rigor_stage="", livor_stage="",
+                        hypostasis_color="", decomp_stage="", body_location="",
+                        clothing_coverage="", discovery_datetime="",
+                        estimated_tod_range="", central_estimate="",
+                        window_hours="", confidence_score="", reasoning="",
+                        factors_increased="", factors_reduced="",
+                        special_notes="", **kwargs):
+    if isinstance(data_or_case_id, dict):
+        d = data_or_case_id
+        case_id            = d.get("case_id", "")
+        body_temp          = d.get("body_temp", "")
+        ambient_temp       = d.get("ambient_temp", "")
+        body_weight        = d.get("body_weight", "")
+        rigor_stage        = d.get("rigor_stage", "")
+        livor_stage        = d.get("livor_stage", "")
+        hypostasis_color   = d.get("hypostasis_color", "")
+        decomp_stage       = d.get("decomp_stage", "")
+        body_location      = d.get("body_location", "")
+        clothing_coverage  = d.get("clothing_coverage", "")
+        discovery_datetime = d.get("discovery_datetime", "")
+        estimated_tod_range = (d.get("estimated_tod_range")
+                                or d.get("estimated_tod", ""))
+        central_estimate   = (d.get("central_estimate")
+                               or d.get("time_window_start", ""))
+        window_hours       = (d.get("window_hours")
+                               or d.get("time_window_end", ""))
+        confidence_score   = d.get("confidence_score", "")
+        reasoning          = (d.get("reasoning")
+                               or d.get("notes")
+                               or d.get("method_used", ""))
+        factors_increased  = d.get("factors_increased", "")
+        factors_reduced    = d.get("factors_reduced", "")
+        special_notes      = d.get("special_notes", "")
+    else:
+        case_id = data_or_case_id
 
-def insert_tod_estimate(case_id, body_temp, ambient_temp, body_weight,
-                         rigor_stage, livor_stage, hypostasis_color,
-                         decomp_stage, body_location, clothing_coverage,
-                         discovery_datetime, estimated_tod_range,
-                         central_estimate, window_hours, confidence_score,
-                         reasoning, factors_increased, factors_reduced,
-                         special_notes):
     pk = _resolve_case_pk(case_id)
     conn = get_connection()
     conn.execute("""
@@ -598,8 +655,7 @@ def insert_tod_estimate(case_id, body_temp, ambient_temp, body_weight,
           factors_increased, factors_reduced, special_notes))
     conn.commit()
     conn.close()
-
-
+                            
 def get_tod_by_case(case_id):
     pk = _resolve_case_pk(case_id)
     if pk is None:
@@ -629,9 +685,25 @@ def get_all_tod_estimates():
 # ─────────────────────────────────────────────────────────────────────────────
 # SUSPECT HELPERS
 # ─────────────────────────────────────────────────────────────────────────────
+def insert_suspect(data_or_case_id=None, name="", age="", gender="",
+                   description="", motive="", alibi="", threat_level="",
+                   notes="", **kwargs):
+    if isinstance(data_or_case_id, dict):
+        d = data_or_case_id
+        case_id      = d.get("case_id", "")
+        name         = (d.get("name")
+                        or d.get("suspect_name", ""))
+        age          = d.get("age", "")
+        gender       = d.get("gender", "")
+        description  = d.get("description", "")
+        motive       = d.get("motive", "")
+        alibi        = d.get("alibi", "")
+        threat_level = (d.get("threat_level")
+                        or str(d.get("priority_rank", "")))
+        notes        = d.get("notes", "")
+    else:
+        case_id = data_or_case_id
 
-def insert_suspect(case_id, name, age, gender, description,
-                   motive, alibi, threat_level, notes):
     pk = _resolve_case_pk(case_id)
     conn = get_connection()
     conn.execute("""
