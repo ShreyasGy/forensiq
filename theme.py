@@ -171,6 +171,6 @@ def apply_theme(active_page="Home"):
         st.markdown("---")
         st.markdown(
             "<small style='color:#8b949e'>Powered by Featherless AI<br>"
-            "Model: Llama-3.3-70B-Instruct</small>",
+            "Model: Qwen-2.5-72B-Instruct</small>",
             unsafe_allow_html=True
         )
