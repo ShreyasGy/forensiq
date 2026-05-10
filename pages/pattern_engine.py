@@ -1,7 +1,11 @@
+# pages/pattern_engine.py
+# ForensiQ — Cross-Crime Pattern Recognition Engine
+
 import streamlit as st
 import os
 import json
 import re
+import time
 from datetime import datetime
 
 import plotly.graph_objects as go
@@ -40,7 +44,30 @@ client = OpenAI(
 )
 MODEL = "Qwen/Qwen2.5-7B-Instruct"
 
-# ── HELPERS ───────────────────────────────────────────────────────────────────
+# ── SYSTEM PROMPT ─────────────────────────────────────────────────────────────
+SYSTEM_PROMPT = """You are ForensiQ Pattern Engine, a forensic intelligence AI.
+You receive summaries of multiple criminal cases and identify cross-case patterns.
+
+Respond using EXACTLY these section labels in this order, each followed by a colon and your analysis:
+
+PHYSICAL_PATTERNS:
+LOCATION_TIME_PATTERNS:
+BEHAVIOURAL_SIGNATURE:
+SUSPECT_CONVERGENCE:
+CONVERGENCE_SCORE:
+INVESTIGATOR_RECOMMENDATION:
+PATTERN_HEADLINE:
+
+Rules:
+- CONVERGENCE_SCORE must be a single integer 0-100
+- PATTERN_HEADLINE must be one concise sentence summarising the link
+- Be specific — reference actual evidence from the cases provided
+- Do not add any text before PHYSICAL_PATTERNS or after PATTERN_HEADLINE"""
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# HELPERS
+# ══════════════════════════════════════════════════════════════════════════════
 
 def build_case_summary(case_id: str) -> str:
     """Pull every piece of available evidence for a case into a plain-text block."""
@@ -90,7 +117,6 @@ def build_case_summary(case_id: str) -> str:
     # TOD
     tod = get_tod_by_case(case_id)
     if tod:
-        import json
         if isinstance(tod, dict):
             td = tod
         elif isinstance(tod, list):
@@ -132,34 +158,57 @@ def build_case_summary(case_id: str) -> str:
     return "\n".join(lines)
 
 
-import time
+def run_pattern_analysis(selected_ids: list) -> str:
+    """Bundle all case evidence and call Featherless AI for pattern analysis."""
 
-max_retries = 3
-for attempt in range(1, max_retries + 1):
-    try:
-        response = client.chat.completions.create(
-            model=MODEL,
-            temperature=0.2,
-            max_tokens=1800,
-            messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user",   "content": user_msg},
-            ],
-        )
-        raw = response.choices[0].message.content
-        break  # success — exit retry loop
-    except Exception as e:
-        if "429" in str(e) or "rate" in str(e).lower() or "concurrency" in str(e).lower():
-            if attempt < max_retries:
-                st.warning(f"AI busy — waiting 15 seconds before retry {attempt}/{max_retries}…")
-                time.sleep(15)
+    case_blocks = []
+    for i, cid in enumerate(selected_ids, 1):
+        summary = build_case_summary(cid)
+        case_blocks.append(f"--- CASE {i} ---\n{summary}")
+
+    user_msg = (
+        f"Analyse the following {len(selected_ids)} cases for cross-crime patterns:\n\n"
+        + "\n\n".join(case_blocks)
+        + "\n\nRespond using the exact section labels specified."
+    )
+
+    raw = ""
+    max_retries = 3
+    for attempt in range(1, max_retries + 1):
+        try:
+            response = client.chat.completions.create(
+                model=MODEL,
+                temperature=0.2,
+                max_tokens=1800,
+                messages=[
+                    {"role": "system", "content": SYSTEM_PROMPT},
+                    {"role": "user",   "content": user_msg},
+                ],
+            )
+            raw = response.choices[0].message.content
+            break  # success
+        except Exception as e:
+            err = str(e)
+            if "429" in err or "rate" in err.lower() or "concurrency" in err.lower():
+                if attempt < max_retries:
+                    st.warning(
+                        f"AI busy — waiting 15 seconds before retry "
+                        f"{attempt}/{max_retries}…"
+                    )
+                    time.sleep(15)
+                else:
+                    st.error(
+                        "AI concurrency limit reached. "
+                        "Please wait 30 seconds and try again."
+                    )
+                    st.stop()
             else:
-                st.error("AI concurrency limit reached. Please wait 30 seconds and try again.")
+                st.error(f"AI call failed: {err}")
                 st.stop()
-        else:
-            st.error(f"AI call failed: {e}")
-            st.stop()
-            
+
+    return raw
+
+
 def parse_result(raw: str) -> dict:
     """Split AI response into a structured dict by section labels."""
     keys = [
@@ -323,7 +372,9 @@ def download_report(parsed: dict, selected_ids: list, score: int, label: str) ->
     ])
 
 
-# ── PAGE ──────────────────────────────────────────────────────────────────────
+# ══════════════════════════════════════════════════════════════════════════════
+# PAGE UI
+# ══════════════════════════════════════════════════════════════════════════════
 
 st.title("🔗 Cross-Crime Pattern Recognition Engine")
 st.markdown(
@@ -398,15 +449,14 @@ with tab_run:
                 icon, label = score_badge(score)
                 ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-            # Persist in session state so results survive re-runs
             st.session_state.update({
                 "pe_parsed": parsed,
-                "pe_score": score,
-                "pe_label": label,
-                "pe_icon": icon,
-                "pe_ids": selected_ids,
-                "pe_ts": ts,
-                "pe_raw": raw,
+                "pe_score":  score,
+                "pe_label":  label,
+                "pe_icon":   icon,
+                "pe_ids":    selected_ids,
+                "pe_ts":     ts,
+                "pe_raw":    raw,
             })
 
         # Show results if available in session state
@@ -420,12 +470,10 @@ with tab_run:
             st.markdown("---")
             st.subheader("📊 Pattern Analysis Results")
 
-            # Headline
             st.markdown(
                 f"### 📌 {parsed.get('PATTERN_HEADLINE', 'Pattern Analysis Complete')}"
             )
 
-            # Gauge + badge
             col_g, col_b = st.columns([1, 1])
             with col_g:
                 st.plotly_chart(gauge_chart(score), use_container_width=True)
@@ -437,13 +485,12 @@ with tab_run:
 
             st.markdown("---")
 
-            # Six result panels
             sections = [
-                ("🩸 Physical Patterns",          "PHYSICAL_PATTERNS",           "info"),
-                ("📍 Location & Time Patterns",   "LOCATION_TIME_PATTERNS",      "info"),
-                ("🎭 Behavioural Signature",       "BEHAVIOURAL_SIGNATURE",       "warning"),
-                ("👤 Suspect Convergence",         "SUSPECT_CONVERGENCE",         "warning"),
-                ("✅ Investigator Recommendations","INVESTIGATOR_RECOMMENDATION", "error"),
+                ("🩸 Physical Patterns",           "PHYSICAL_PATTERNS",           "info"),
+                ("📍 Location & Time Patterns",    "LOCATION_TIME_PATTERNS",      "info"),
+                ("🎭 Behavioural Signature",        "BEHAVIOURAL_SIGNATURE",       "warning"),
+                ("👤 Suspect Convergence",          "SUSPECT_CONVERGENCE",         "warning"),
+                ("✅ Investigator Recommendations", "INVESTIGATOR_RECOMMENDATION", "error"),
             ]
 
             for title, key, style in sections:
@@ -457,13 +504,16 @@ with tab_run:
                     st.error(content)
 
             # Save to DB
-            insert_crime_pattern(
-                selected_ids,
-                parsed.get("PATTERN_HEADLINE", ""),
-                float(score),
-                parsed.get("PHYSICAL_PATTERNS", ""),
-            )
-            st.success("✅ Pattern analysis saved to database.")
+            try:
+                insert_crime_pattern(
+                    selected_ids,
+                    parsed.get("PATTERN_HEADLINE", ""),
+                    float(score),
+                    parsed.get("PHYSICAL_PATTERNS", ""),
+                )
+                st.success("✅ Pattern analysis saved to database.")
+            except Exception as e:
+                st.warning(f"Could not save pattern to database: {e}")
 
             # Download
             report_txt = download_report(parsed, selected_ids, score, label)
@@ -491,7 +541,10 @@ with tab_run:
 with tab_history:
     st.subheader("Previous Pattern Analyses")
 
-    history = get_all_patterns()
+    try:
+        history = get_all_patterns()
+    except Exception:
+        history = []
 
     if not history:
         st.info("No pattern analyses have been saved yet. Run your first analysis above.")
@@ -514,3 +567,11 @@ with tab_history:
                 st.markdown(f"**Score:** {s}/100  —  {ico} {lbl}")
                 st.markdown(f"**Key Physical Pattern:** {p.get('common_factors', 'N/A')}")
                 st.caption(f"Saved: {p.get('created_at', '')}")
+
+# ── Disclaimer ─────────────────────────────────────────────────────────────────
+st.divider()
+st.warning(
+    "⚠️ **Disclaimer:** ForensiQ Pattern Engine is an AI-assisted investigative tool. "
+    "All pattern matches are probabilistic and must be verified by qualified forensic "
+    "professionals. Not admissible as standalone legal evidence."
+)
