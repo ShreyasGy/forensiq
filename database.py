@@ -132,24 +132,7 @@ def _normalize_autopsy(row):
     d["soap_plan"]         = d.get("soap_plan",         "")
     return d
 
-
 def _normalize_risk(row):
-    """
-    Unify the messy risk_scores table so every caller gets the same keys.
-
-    DB columns (legacy):  id, case_id, score, risk_level, reasoning, factors,
-                          recommendations, created_at
-    New columns added by risk_scorer.py migration:
-                          risk_score, risk_category, notes
-
-    Callers expect:
-      case_manager.py  → risk['score'], risk['risk_level'], risk['factors'],
-                          risk['calculated_at']
-      dashboard.py     → risk['risk_score'], risk['risk_category'],
-                          risk['score'], risk['category']
-      risk_scorer.py   → risk['risk_score'], risk['risk_category']
-      forensic_profiler→ risk['score'], risk['risk_level']
-    """
     if row is None:
         return {}
     try:
@@ -157,28 +140,34 @@ def _normalize_risk(row):
     except Exception:
         return {}
 
-    # Resolve score — stored under either 'score' or 'risk_score'
-    score_val = d.get("risk_score") if d.get("risk_score") is not None else d.get("score", 0)
-    d["score"]      = score_val
-    d["risk_score"] = score_val
+    # Aliases so every module reads the same keys
+    d["score"]          = d.get("score")       or d.get("risk_score",    "")
+    d["risk_score"]     = d["score"]
+    d["risk_level"]     = d.get("risk_level")  or d.get("risk_category", "")
+    d["risk_category"]  = d["risk_level"]
+    d["factors"]        = d.get("factors",        "")
+    d["reasoning"]      = d.get("reasoning",      "")
+    d["recommendations"]= d.get("recommendations","")
+    d["calculated_at"]  = (d.get("calculated_at")
+                           or d.get("created_at", ""))
+    # Rebuild notes JSON so risk_scorer.py and dashboard can read it
+    try:
+        import json as _json
+        existing_notes = d.get("notes", "")
+        if existing_notes:
+            notes_dict = _json.loads(existing_notes)
+        else:
+            notes_dict = {}
+    except Exception:
+        notes_dict = {}
 
-    # Resolve category / level
-    cat_val = d.get("risk_category") or d.get("risk_level", "Unknown")
-    d["risk_level"]    = cat_val
-    d["risk_category"] = cat_val
-    d["category"]      = cat_val
-
-    # Resolve notes / factors
-    notes_val   = d.get("notes")   or d.get("factors", "")
-    factors_val = d.get("factors") or d.get("notes",   "")
-    d["notes"]           = notes_val
-    d["factors"]         = factors_val
-    d["recommendations"] = d.get("recommendations", "")
-    d["reasoning"]       = d.get("reasoning", "")
-
-    # Alias for case_manager.py
-    d["calculated_at"] = d.get("created_at", "")
-
+    if not notes_dict:
+        notes_dict = {
+            "rationale":           d.get("reasoning", ""),
+            "red_flags":           d.get("factors", ""),
+            "recommended_actions": d.get("recommendations", ""),
+        }
+    d["notes"] = _json.dumps(notes_dict)
     return d
 
 
