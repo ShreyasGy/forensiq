@@ -479,9 +479,38 @@ def get_autopsy_by_case(case_id):
     conn = get_connection()
     conn.row_factory = sqlite3.Row
     cur = conn.cursor()
-    cur.execute("SELECT * FROM autopsy_reports WHERE case_id = ? ORDER BY id DESC LIMIT 1", (pk,))
+    cur.execute(
+        "SELECT * FROM autopsy_reports WHERE case_id = ? ORDER BY id DESC LIMIT 1",
+        (pk,)
+    )
     row = cur.fetchone()
     conn.close()
+
+    if row is None:
+        # Return empty dict with all keys case_manager.py expects
+        return {
+            "cause_of_death":    "",
+            "manner_of_death":   "",
+            "injuries":          "",
+            "toxicology":        "",
+            "findings":          "",
+            "key_terms":         "",
+            "weapon":            "",
+            "defensive_wounds":  "",
+            "signs_of_struggle": "",
+            "soap_subjective":   "",
+            "soap_objective":    "",
+            "soap_assessment":   "",
+            "soap_plan":         "",
+            "filename":          "",
+            "raw_text":          "",
+            "injury_type":       "",
+            "body_location":     "",
+            "weapon_type":       "",
+            "time_indicators":   "",
+            "anomalies":         "",
+        }
+
     return _normalize_autopsy(row)
 
 # ─────────────────────────────────────────────────────────────────────────────
