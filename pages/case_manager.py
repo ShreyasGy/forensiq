@@ -4,6 +4,7 @@
 
 import streamlit as st
 import os
+import json
 from datetime import datetime
 from dotenv import load_dotenv
 from openai import OpenAI
@@ -72,6 +73,15 @@ def priority_badge(priority):
     return badges.get(priority, f"⚪ {priority}")
 
 
+def risk_badge_color(category: str) -> str:
+    return {
+        "low":      "#28a745",
+        "medium":   "#ffc107",
+        "high":     "#fd7e14",
+        "critical": "#dc3545",
+    }.get(str(category).lower(), "#6c757d")
+
+
 def ai_summarize_case(case):
     """
     Calls Featherless AI to generate a concise intelligence summary
@@ -119,8 +129,6 @@ Write your summary now:"""
 # ══════════════════════════════════════════════════════════════════════════════
 # SESSION STATE SETUP
 # ══════════════════════════════════════════════════════════════════════════════
-# Session state lets us remember which view the user is on
-# without resetting every time they click something.
 
 if "cm_view" not in st.session_state:
     st.session_state.cm_view = "list"          # 'list', 'detail', 'new'
@@ -247,9 +255,6 @@ def show_new_case_form():
         elif not assigned_investigator.strip():
             st.error("❌ Assigned Investigator Name is required.")
         else:
-            # Combine date + time into one string
-            incident_datetime = f"{incident_date} {incident_time}"
-
             insert_case({
                 "case_id": new_case_id,
                 "victim_name": victim_name.strip(),
@@ -539,9 +544,13 @@ def show_case_detail():
         reports = get_autopsy_by_case(case_id)
         if reports:
             for r in reports:
-                st.markdown(f"**Cause of Death:** {r['cause_of_death']}")
-                st.markdown(r["report_text"])
-                st.markdown(f"*Uploaded: {r['uploaded_at']}*")
+                st.markdown(f"**Cause of Death:** {r.get('cause_of_death', '—')}")
+                if r.get("manner_of_death"):
+                    st.markdown(f"**Manner of Death:** {r['manner_of_death']}")
+                report_text = r.get("report_text") or r.get("raw_text") or r.get("soap_subjective", "")
+                if report_text:
+                    st.markdown(report_text)
+                st.markdown(f"*Uploaded: {r.get('uploaded_at') or r.get('created_at', '—')}*")
                 st.markdown("---")
         else:
             st.info("No autopsy reports linked to this case yet. "
@@ -552,22 +561,36 @@ def show_case_detail():
         witnesses = get_witnesses_by_case(case_id)
         if witnesses:
             for w in witnesses:
-                st.markdown(f"**{w['witness_name']}** — {w['recorded_at']}")
-                st.markdown(w["statement_text"])
+                name = w.get("witness_name") or w.get("key_people", "Unknown")
+                recorded = w.get("recorded_at") or w.get("created_at", "—")
+                statement = w.get("statement") or w.get("statement_text") or w.get("raw_text", "")
+                reliability = w.get("reliability_score") or w.get("reliability_rating", "")
+                contradictions = w.get("contradictions", "")
+                st.markdown(f"**{name}** — {recorded}")
+                if statement:
+                    st.markdown(statement)
+                if reliability:
+                    st.markdown(f"*Reliability: {reliability}*")
+                if contradictions:
+                    st.markdown(f"*Contradictions: {contradictions}*")
                 st.markdown("---")
         else:
             st.info("No witness statements linked to this case yet.")
 
     # TOD Estimate
     with st.expander("⏱️ Time of Death Estimate"):
-        tod = get_tod_by_case(case_id)
-        if tod:
-            for t in tod:
-                st.markdown(f"**Estimated TOD:** {t['estimated_tod']}")
-                st.markdown(f"**Method:** {t['method_used']}")
-                st.markdown(f"**Confidence:** {t['confidence']}")
-                if t["notes"]:
-                    st.markdown(f"*Notes: {t['notes']}*")
+        tod_list = get_tod_by_case(case_id)
+        if tod_list:
+            for t in tod_list:
+                estimated = t.get("estimated_tod") or t.get("estimated_tod_range", "—")
+                method = t.get("method_used") or t.get("reasoning", "—")
+                confidence = t.get("confidence") or t.get("confidence_score", "—")
+                notes = t.get("notes") or t.get("special_notes", "")
+                st.markdown(f"**Estimated TOD:** {estimated}")
+                st.markdown(f"**Method:** {method}")
+                st.markdown(f"**Confidence:** {confidence}")
+                if notes:
+                    st.markdown(f"*Notes: {notes}*")
         else:
             st.info("No TOD estimate yet. Use the TOD Estimator module.")
 
@@ -576,24 +599,125 @@ def show_case_detail():
         suspects = get_suspects_by_case(case_id)
         if suspects:
             for s in suspects:
-                st.markdown(
-                    f"**{s['suspect_name']}** — {s['age']} yrs, {s['gender']} — "
-                    f"Relation: {s['relation']}"
-                )
-                if s["notes"]:
-                    st.markdown(f"*{s['notes']}*")
+                name = s.get("suspect_name") or s.get("name", "Unknown")
+                age = s.get("age", "—")
+                gender = s.get("gender", "—")
+                priority_rank = s.get("priority_rank") or s.get("threat_level", "—")
+                motive = s.get("motive", "")
+                alibi = s.get("alibi", "")
+                notes = s.get("notes", "")
+                st.markdown(f"**{name}** — {age} yrs, {gender} — Priority: {priority_rank}")
+                if motive:
+                    st.markdown(f"*Motive: {motive}*")
+                if alibi:
+                    st.markdown(f"*Alibi: {alibi}*")
+                if notes:
+                    st.markdown(f"*Notes: {notes}*")
                 st.markdown("---")
         else:
             st.info("No suspects added yet. Use the Forensic Profiler module.")
 
-    # Risk Score
+    # ── Risk Score ──────────────────────────────────────────────────────────
     with st.expander("📊 Risk Score"):
         risk = get_risk_score_by_case(case_id)
         if risk:
-            st.markdown(f"**Score:** {risk['score']}")
-            st.markdown(f"**Risk Level:** {risk['risk_level']}")
-            st.markdown(f"**Factors:** {risk['factors']}")
-            st.markdown(f"*Calculated: {risk['calculated_at']}*")
+            score    = risk.get("risk_score") or risk.get("score", "N/A")
+            category = risk.get("risk_category") or risk.get("risk_level", "N/A")
+            cat_color = risk_badge_color(str(category))
+            calculated = risk.get("calculated_at") or risk.get("created_at", "")
+
+            # ── Score + category banner ────────────────────────────────────
+            st.markdown(
+                f"""
+                <div style="
+                    background: {cat_color};
+                    border-radius: 10px;
+                    padding: 16px 20px;
+                    margin-bottom: 14px;
+                    display: flex;
+                    align-items: center;
+                    gap: 24px;
+                ">
+                    <div>
+                        <div style="color:#fff; font-size:11px; letter-spacing:1px; text-transform:uppercase;">
+                            Risk Score
+                        </div>
+                        <div style="color:#fff; font-size:36px; font-weight:900; line-height:1;">
+                            {score}<span style="font-size:18px;">/100</span>
+                        </div>
+                    </div>
+                    <div>
+                        <div style="color:#fff; font-size:11px; letter-spacing:1px; text-transform:uppercase;">
+                            Category
+                        </div>
+                        <div style="color:#fff; font-size:28px; font-weight:800; line-height:1;">
+                            {str(category).upper()}
+                        </div>
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+            if calculated:
+                st.caption(f"Assessed: {str(calculated)[:19]}")
+
+            # ── Confidence + rationale ─────────────────────────────────────
+            confidence = risk.get("confidence", "")
+            rationale  = risk.get("rationale") or risk.get("reasoning", "")
+            if confidence:
+                st.markdown(f"**Confidence in Score:** {confidence}%")
+            if rationale:
+                st.info(f"📋 **Scoring Rationale:** {rationale}")
+
+            # ── Evidence quality ───────────────────────────────────────────
+            eq = risk.get("evidence_quality", {})
+            if eq:
+                st.markdown("**Evidence Quality:**")
+                eq_col1, eq_col2, eq_col3 = st.columns(3)
+                eq_col1.metric("Physical", f"{eq.get('physical', 0)}%")
+                eq_col2.metric("Witness",  f"{eq.get('witness',  0)}%")
+                eq_col3.metric("Digital",  f"{eq.get('digital',  0)}%")
+
+            # ── Red flags ──────────────────────────────────────────────────
+            red_flags = risk.get("red_flags", [])
+            if red_flags and isinstance(red_flags, list) and len(red_flags) > 0:
+                st.markdown("**🚩 Top Red Flags:**")
+                for i, rf in enumerate(red_flags[:5], 1):
+                    if isinstance(rf, dict):
+                        flag = rf.get("flag", "")
+                        impl = rf.get("implication", "")
+                        st.markdown(
+                            f"{i}. **{flag}**" + (f" — {impl}" if impl else "")
+                        )
+                    else:
+                        st.markdown(f"{i}. {rf}")
+
+            # ── Evidence gaps ──────────────────────────────────────────────
+            gaps = risk.get("evidence_gaps", [])
+            if gaps and isinstance(gaps, list) and len(gaps) > 0:
+                st.markdown("**🕳️ Evidence Gaps:**")
+                for gap in gaps:
+                    st.markdown(f"- {gap}")
+
+            # ── Recommended actions ────────────────────────────────────────
+            actions = risk.get("recommended_actions", [])
+            if actions and isinstance(actions, list) and len(actions) > 0:
+                st.markdown("**✅ Recommended Actions:**")
+                for i, act in enumerate(actions, 1):
+                    st.markdown(f"**{i}.** {act}")
+
+            # ── Fallback: raw factors / recommendations ────────────────────
+            # (for older records saved before the notes JSON was structured)
+            if not red_flags:
+                factors = risk.get("factors", "")
+                if factors:
+                    st.markdown(f"**Factors:** {factors}")
+            if not actions:
+                recommendations = risk.get("recommendations", "")
+                if recommendations:
+                    st.markdown(f"**Recommendations:** {recommendations}")
+
         else:
             st.info("No risk score calculated yet. Use the Risk Scorer module.")
 
@@ -602,11 +726,16 @@ def show_case_detail():
         cctv = get_cctv_by_case(case_id)
         if cctv:
             for c in cctv:
-                flag = "🚩 FLAGGED" if c["flagged"] else ""
-                st.markdown(
-                    f"**{c['camera_location']}** — {c['timestamp']} {flag}"
-                )
-                st.markdown(c["description"])
+                location_label = c.get("camera_location") or c.get("location", "Unknown")
+                timestamp = c.get("timestamp", "—")
+                flag = "🚩 FLAGGED" if c.get("flagged") else ""
+                description = c.get("description", "")
+                confidence = c.get("confidence", "")
+                st.markdown(f"**{location_label}** — {timestamp} {flag}")
+                if description:
+                    st.markdown(description)
+                if confidence:
+                    st.markdown(f"*Confidence: {confidence}*")
                 st.markdown("---")
         else:
             st.info("No CCTV logs linked yet. Use the CCTV Tracker module.")
@@ -663,7 +792,8 @@ def show_case_detail():
             save_btn = st.form_submit_button("💾 Save Changes")
 
         if save_btn:
-            update_case(case_id, new_status, new_priority, new_notes)
+            update_case(case_id, status=new_status,
+                        priority=new_priority, initial_notes=new_notes)
             st.success("✅ Case updated successfully!")
             st.session_state.cm_edit_mode = False
             st.rerun()
